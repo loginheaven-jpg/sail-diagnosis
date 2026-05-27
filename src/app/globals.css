@@ -1,26 +1,209 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * SAIL Design System v1.0
+ * 단일 원천: SAIL_DESIGN_SYSTEM.md, src/styles/tokens.ts
+ *
+ * 이 파일은 Tailwind v4의 @theme 블록을 통해 토큰을 Tailwind 클래스로 노출한다.
+ * 코드에 색상 hex를 직접 박지 말고 다음 클래스를 사용하라:
+ *   - 색상:  bg-sail-s, text-sail-navy, border-sail-orange
+ *   - 간격:  p-card, px-page
+ *   - radius: rounded-card, rounded-question
+ *   - shadow: shadow-card-hover, shadow-focus
+ *   - 시멘틱 폰트: text-body, text-h2
+ */
+
+@theme {
+  /* ============================================================
+   * SAIL Type Colors (4유형 도메인 색상)
+   * ============================================================ */
+  --color-sail-s: #1E3A5F;
+  --color-sail-a: #F28C38;
+  --color-sail-i: #6B3FA0;
+  --color-sail-l: #2E9E6B;
+
+  /* Quadrant tints (나침반 사분면 배경) */
+  --color-sail-s-tint: rgba(30, 58, 95, 0.06);
+  --color-sail-a-tint: rgba(242, 140, 56, 0.06);
+  --color-sail-i-tint: rgba(107, 63, 160, 0.06);
+  --color-sail-l-tint: rgba(46, 158, 107, 0.06);
+
+  /* ============================================================
+   * Primary / Accent (시스템 컬러 — S형 Navy, A형 Orange와 동일)
+   * ============================================================ */
+  --color-sail-navy: #1E3A5F;
+  --color-sail-navy-light: #2D4F7B;
+  --color-sail-navy-dark: #14283F;
+  --color-sail-navy-bg: #EFF3F8;
+
+  --color-sail-orange: #F28C38;
+  --color-sail-orange-hover: #DC7A2A;
+  --color-sail-orange-bg: #FFF4E6;
+
+  /* ============================================================
+   * Neutral (Slate scale)
+   * ============================================================ */
+  --color-sail-gray-50: #F8FAFC;
+  --color-sail-gray-100: #F1F5F9;
+  --color-sail-gray-200: #E2E8F0;
+  --color-sail-gray-300: #CBD5E1;
+  --color-sail-gray-400: #94A3B8;
+  --color-sail-gray-500: #64748B;
+  --color-sail-gray-600: #475569;
+  --color-sail-gray-700: #334155;
+  --color-sail-gray-800: #1E293B;
+  --color-sail-gray-900: #0F172A;
+
+  /* ============================================================
+   * Semantic
+   * ============================================================ */
+  --color-sail-success: #16A34A;
+  --color-sail-warning: #F59E0B;
+  --color-sail-danger: #DC2626;
+  --color-sail-info: #0EA5E9;
+
+  /* ============================================================
+   * Page-level backgrounds
+   * ============================================================ */
+  --color-background: var(--color-sail-gray-50);
+  --color-surface: #FFFFFF;
+  --color-foreground: var(--color-sail-gray-700);
+  --color-heading: var(--color-sail-gray-900);
+
+  /* ============================================================
+   * Typography
+   * ============================================================ */
+  --font-sans: 'Pretendard Variable', 'Pretendard', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), 'Consolas', monospace;
+
+  /* Type scale (Tailwind 시멘틱 클래스용) */
+  --text-display: 32px;
+  --text-display--line-height: 1.25;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-h1: 28px;
+  --text-h1--line-height: 1.3;
+  --text-h1--letter-spacing: -0.02em;
+
+  --text-h2: 24px;
+  --text-h2--line-height: 1.35;
+
+  --text-h3: 20px;
+  --text-h3--line-height: 1.4;
+
+  --text-h4: 18px;
+  --text-h4--line-height: 1.4;
+
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 1.6;
+
+  --text-body: 15px;
+  --text-body--line-height: 1.6;
+
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 1.5;
+
+  --text-caption: 13px;
+  --text-caption--line-height: 1.5;
+
+  --text-tiny: 12px;
+  --text-tiny--line-height: 1.4;
+
+  /* ============================================================
+   * Spacing (시멘틱 alias)
+   * ============================================================ */
+  --spacing-card: 24px;
+  --spacing-question: 32px;
+  --spacing-topbar: 60px;
+  --spacing-content: 720px;
+  --spacing-page: 1200px;
+
+  /* ============================================================
+   * Border Radius
+   * ============================================================ */
+  --radius-button: 10px;
+  --radius-input: 10px;
+  --radius-card: 16px;        /* 일반 카드 (rounded-2xl 대응) */
+  --radius-question: 20px;    /* 문항 카드, 모달 외곽 */
+  --radius-pill: 999px;
+  --radius-alert: 12px;
+
+  /* ============================================================
+   * Shadow
+   * ============================================================ */
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-card-hover: 0 4px 16px rgba(15, 23, 42, 0.10);
+  --shadow-modal: 0 16px 48px rgba(15, 23, 42, 0.18);
+  --shadow-focus: 0 0 0 3px rgba(30, 58, 95, 0.12);
+  --shadow-focus-danger: 0 0 0 3px rgba(220, 38, 38, 0.12);
+
+  /* ============================================================
+   * Motion
+   * ============================================================ */
+  --ease-out-sail: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-sail: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring-sail: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================================
+ * Base styles
+ * ============================================================ */
+html, body {
+  font-family: var(--font-sans);
+  color: var(--color-foreground);
+  background: var(--color-background);
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-heading);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--color-sail-navy);
+  text-decoration: none;
+  transition: color 200ms var(--ease-out-sail);
+}
+a:hover { color: var(--color-sail-navy-light); }
+
+/* ============================================================
+ * Focus ring (keyboard only, mouse-hidden)
+ * ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--color-sail-navy);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ============================================================
+ * Reduced motion (사용자 설정 존중)
+ * ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 50ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 50ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================
+ * Selection
+ * ============================================================ */
+::selection {
+  background: var(--color-sail-orange-bg);
+  color: var(--color-sail-navy-dark);
 }
