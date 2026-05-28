@@ -125,7 +125,21 @@ function LoginPageContent() {
         setBusy(null);
         return;
       }
-      router.replace(redirect);
+      // 3) 역할 기반 라우팅 — 명시적 redirect가 있으면 그곳, 없으면 role에 따라
+      if (redirect && redirect !== '/') {
+        router.replace(redirect);
+      } else {
+        try {
+          const me = await fetch('/api/users/me');
+          const meJson = (await me.json()) as { user?: { role?: string } };
+          const role = meJson.user?.role ?? 'user';
+          if (role === 'admin') router.replace('/admin');
+          else if (role === 'coach') router.replace('/coach');
+          else router.replace('/');
+        } catch {
+          router.replace('/');
+        }
+      }
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

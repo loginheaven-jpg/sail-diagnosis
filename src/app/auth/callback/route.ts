@@ -2,17 +2,23 @@
  * /auth/callback?code=<oauth_code>&redirect=<path>
  *
  * Supabase OAuth/매직링크 콜백 핸들러.
- * OAuth 공급자가 ?code를 들고 이 라우트로 redirect 한다.
- * exchangeCodeForSession()으로 세션 쿠키를 발급한 뒤 원래 위치로 리다이렉트.
+ * 1) code → 세션 교환
+ * 2) 사용자 role 확인
+ * 3) 역할 기반 자동 라우팅:
+ *    - admin → /admin
+ *    - coach → /coach
+ *    - user → ?redirect (지정된 경우) 또는 /
+ *    - 프로필(full_name/phone) 미완 → /onboarding은 proxy.ts가 강제하므로 여기서는 무시
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import type { UserRole } from '@/types/database';
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
-  const redirect = request.nextUrl.searchParams.get('redirect') ?? '/';
+  const explicitRedirect = request.nextUrl.searchParams.get('redirect');
   const errorParam = request.nextUrl.searchParams.get('error_description');
 
   if (errorParam) {
@@ -33,11 +39,48 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // 안전한 내부 경로만 허용
-  const safeRedirect =
-    redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/';
+  // 역할 기반 라우팅
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let destination = '/';
+
+  if (user) {
+    const svc = createServiceRoleClient();
+    const { data: profile } = await svc
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single<{ role: UserRole }>();
+
+    const role = profile?.role ?? 'user';
+
+    // explicit redirect 우선 (단 안전한 내부 경로만)
+    if (
+      explicitRedirect &&
+      explicitRedirect.startsWith('/') &&
+      !explicitRedirect.startsWith('//')
+    ) {
+      destination = explicitRedirect;
+    } else if (role === 'admin') {
+      destination = '/admin';
+    } else if (role === 'coach') {
+      destination = '/coach';
+    } else {
+      destination = '/';
+    }
+  } else if (
+    explicitRedirect &&
+    explicitRedirect.startsWith('/') &&
+    !explicitRedirect.startsWith('//')
+  ) {
+    destination = explicitRedirect;
+  }
+
   const dest = request.nextUrl.clone();
-  dest.pathname = safeRedirect;
+  dest.pathname = destination;
   dest.search = '';
   return NextResponse.redirect(dest);
 }
