@@ -13,6 +13,7 @@
  */
 
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 import type { Database } from '@/types/database';
@@ -55,6 +56,10 @@ export async function createClient() {
  *
  * **주의**: 매우 권한 있는 클라이언트. API Route 안에서 신뢰할 수 있는 작업에만 사용.
  * 사용자 입력이 직접 영향을 미치는 쿼리에는 절대 쓰지 말 것.
+ *
+ * @supabase/ssr이 아닌 @supabase/supabase-js의 createClient를 사용한다.
+ * Service role은 세션/쿠키 의존성이 없으므로 SSR wrapper가 불필요하고,
+ * generic 타입 추론이 더 잘 동작한다.
  */
 export function createServiceRoleClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -67,13 +72,10 @@ export function createServiceRoleClient() {
     );
   }
 
-  // Service role 클라이언트는 쿠키 의존성이 없으므로 stateless createServerClient 사용
-  return createServerClient<Database>(url, key, {
-    cookies: {
-      getAll: () => [],
-      setAll: () => {
-        /* no-op */
-      },
+  return createSupabaseClient<Database>(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
   });
 }
