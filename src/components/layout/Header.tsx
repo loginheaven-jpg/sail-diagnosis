@@ -9,9 +9,23 @@
 import Link from 'next/link';
 
 import { getAuthContext } from '@/lib/supabase/auth';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function Header() {
   const auth = await getAuthContext();
+
+  // full_name 우선 표시 — 없으면 nickname → 이메일 prefix
+  let displayName: string | null = null;
+  if (auth) {
+    const svc = createServiceRoleClient();
+    const { data } = await svc
+      .from('users')
+      .select('full_name, nickname')
+      .eq('id', auth.userId)
+      .single<{ full_name: string | null; nickname: string | null }>();
+    displayName =
+      data?.full_name ?? data?.nickname ?? auth.email?.split('@')[0] ?? null;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-sail-gray-200 bg-white/95 backdrop-blur-sm">
@@ -56,7 +70,7 @@ export async function Header() {
 
         <div className="flex items-center gap-2 text-bodySm">
           {auth ? (
-            <UserChip auth={auth} />
+            <UserChip auth={auth} displayName={displayName} />
           ) : (
             <Link
               href="/login"
@@ -73,8 +87,10 @@ export async function Header() {
 
 function UserChip({
   auth,
+  displayName,
 }: {
   auth: { userId: string; role: 'user' | 'coach' | 'admin'; email: string | null };
+  displayName: string | null;
 }) {
   const roleLabel =
     auth.role === 'admin' ? '관리자' : auth.role === 'coach' ? '코치' : '멤버';
@@ -93,7 +109,7 @@ function UserChip({
         {roleLabel}
       </span>
       <span className="hidden text-sail-gray-700 sm:inline">
-        {auth.email?.split('@')[0] ?? '사용자'}
+        {displayName ?? '사용자'}
       </span>
       <form action="/auth/signout" method="POST">
         <button

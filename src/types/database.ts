@@ -23,6 +23,8 @@ export interface Database {
         Row: {
           id: string;
           nickname: string | null;
+          full_name: string | null;
+          phone: string | null;
           email: string | null;
           role: UserRole;
           created_at: string;
@@ -31,11 +33,15 @@ export interface Database {
         Insert: {
           id: string;
           nickname?: string | null;
+          full_name?: string | null;
+          phone?: string | null;
           email?: string | null;
           role?: UserRole;
         };
         Update: {
           nickname?: string | null;
+          full_name?: string | null;
+          phone?: string | null;
           email?: string | null;
           role?: UserRole;
         };
@@ -161,6 +167,24 @@ export interface Database {
         Args: { p_code: string };
         Returns: string | null;
       };
+      phone_exists: {
+        Args: { p_phone: string };
+        Returns: boolean;
+      };
+      email_by_phone: {
+        Args: { p_phone: string };
+        Returns: string | null;
+      };
+      is_admin: { Args: { p_user_id: string }; Returns: boolean };
+      is_group_coach: {
+        Args: { p_group_id: string; p_user_id: string };
+        Returns: boolean;
+      };
+      is_group_member: {
+        Args: { p_group_id: string; p_user_id: string };
+        Returns: boolean;
+      };
+      user_role: { Args: { p_user_id: string }; Returns: string };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
