@@ -11,6 +11,7 @@
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
+import { useTestStore } from '@/stores/test-store';
 import { SAIL_TYPES, type SailType } from '@/types/sail';
 
 interface ShareCardProps {
@@ -97,8 +98,8 @@ export function ShareCard({ resultId, dominantType, nickname }: ShareCardProps) 
         <Button
           variant="outline"
           onClick={() => {
-            // 진단 다시 시작 — sessionStorage 리셋
-            sessionStorage.removeItem('sail-test-progress');
+            // 진단 다시 시작 — store reset이 localStorage도 함께 비움
+            useTestStore.getState().reset();
             window.location.href = '/test';
           }}
         >

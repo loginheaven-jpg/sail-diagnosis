@@ -123,6 +123,10 @@ function TestPageContent() {
         }
         const { id } = (await res.json()) as { id: string };
         if (cancelled) return;
+        // 결과 저장 성공 → store 초기화 (localStorage도 함께 비워짐).
+        // 그래야 다음 진단 시 이전 답안이 끌려오지 않는다.
+        // 단, 결과 페이지 자체는 result_id 기반이므로 store와 무관.
+        useTestStore.getState().reset();
         router.replace(`/result/${id}`);
       } catch (err) {
         if (cancelled) return;

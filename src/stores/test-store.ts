@@ -2,7 +2,12 @@
  * Zustand 진단 진행 상태 스토어
  *
  * 30문항의 진행 상태(현재 Phase, 문항 인덱스, 응답, 닉네임 등)를 보관.
- * 새로고침에도 진단을 이어할 수 있도록 sessionStorage에 persist.
+ *
+ * 저장소 정책 (사용자 데이터 보호):
+ *   - localStorage 사용 — 탭/브라우저를 닫고 다시 와도 진단 도중 데이터가 살아있다.
+ *   - "sail-test-progress" 키 하나에 통합 저장.
+ *   - 진단 완료 + 서버 저장 성공 시점에 reset() 호출로 명시적 정리.
+ *     (안 그러면 다음 진단 시작 시 이전 답안이 끌려옴)
  *
  * 채점은 calculator/gaussian/consistency 모듈에 위임.
  */
@@ -108,7 +113,8 @@ export const useTestStore = create<TestState>()(
     {
       name: 'sail-test-progress',
       storage: createJSONStorage(() => {
-        // SSR-safe: 브라우저에서만 sessionStorage 사용, 서버에서는 메모리 fallback
+        // SSR-safe: 브라우저에서만 localStorage 사용, 서버에서는 메모리 fallback.
+        // localStorage이므로 탭/브라우저를 닫아도 진단 도중 응답이 살아있다.
         if (typeof window === 'undefined') {
           return {
             getItem: () => null,
@@ -116,7 +122,7 @@ export const useTestStore = create<TestState>()(
             removeItem: () => undefined,
           };
         }
-        return sessionStorage;
+        return localStorage;
       }),
       // 완료 후 결과 객체까지 persist (새로고침해도 결과 유지)
       partialize: (state) => ({
