@@ -68,14 +68,16 @@ function TestPageFallback() {
 function TestPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const sessionParam = searchParams.get('session');
+  // ?group=XXXXX 또는 ?session=XXXXX (레거시 호환)
+  const groupParam =
+    searchParams.get('group') ?? searchParams.get('session');
 
   const isStarted = useTestStore((s) => s.isStarted);
   const isCompleted = useTestStore((s) => s.isCompleted);
   const phase = useTestStore((s) => s.phase);
   const questionIndex = useTestStore((s) => s.questionIndex);
   const nickname = useTestStore((s) => s.nickname);
-  const sessionCode = useTestStore((s) => s.sessionCode);
+  const groupCode = useTestStore((s) => s.groupCode);
   const answers = useTestStore((s) => s.answers);
 
   const [mode, setMode] = useState<ViewMode>('phase');
@@ -109,7 +111,7 @@ function TestPageContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             nickname,
-            sessionCode,
+            groupCode,
             answers,
             device:
               typeof navigator !== 'undefined' ? navigator.userAgent : null,
@@ -132,11 +134,11 @@ function TestPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [isCompleted, mode, nickname, sessionCode, answers, router]);
+  }, [isCompleted, mode, nickname, groupCode, answers, router]);
 
   // === 화면 분기 ===
   if (!isStarted) {
-    return <IntroScreen prefilledSessionCode={sessionParam} />;
+    return <IntroScreen prefilledGroupCode={groupParam} />;
   }
 
   if (mode === 'submitting') {

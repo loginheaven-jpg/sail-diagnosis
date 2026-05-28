@@ -1,13 +1,20 @@
 /**
  * Supabase Database 타입 정의 (수동 작성)
  *
- * 본 파일은 supabase/migrations/20260528000000_initial_schema.sql 의
- * 테이블 구조와 1:1 매핑된다. 마이그레이션이 바뀌면 동시 갱신한다.
+ * 본 파일은 supabase/migrations/*.sql 의 누적 스키마와 1:1 매핑된다.
+ * 마이그레이션이 바뀌면 동시 갱신한다.
  *
- * 향후 `supabase gen types typescript`로 자동 생성으로 전환할 수 있다.
+ * 현재 반영된 마이그레이션:
+ *   - 20260528000000_initial_schema.sql  (users + results)
+ *   - 20260528120000_groups.sql          (groups + group_members + coach_applications,
+ *                                         results.group_id, results.session_code DROP)
  */
 
 import type { AnswerRecord, SailType } from './sail';
+
+export type UserRole = 'user' | 'coach' | 'admin';
+export type GroupStatus = 'active' | 'archived';
+export type CoachApplicationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Database {
   public: {
@@ -17,7 +24,7 @@ export interface Database {
           id: string;
           nickname: string | null;
           email: string | null;
-          role: 'user' | 'coach' | 'admin';
+          role: UserRole;
           created_at: string;
           updated_at: string;
         };
@@ -25,19 +32,20 @@ export interface Database {
           id: string;
           nickname?: string | null;
           email?: string | null;
-          role?: 'user' | 'coach' | 'admin';
+          role?: UserRole;
         };
         Update: {
           nickname?: string | null;
           email?: string | null;
-          role?: 'user' | 'coach' | 'admin';
+          role?: UserRole;
         };
       };
+
       results: {
         Row: {
           id: string;
           user_id: string | null;
-          session_code: string | null;
+          group_id: string | null;
           nickname: string | null;
           answers: AnswerRecord;
           assertiveness_raw: number;
@@ -57,7 +65,7 @@ export interface Database {
         };
         Insert: {
           user_id?: string | null;
-          session_code?: string | null;
+          group_id?: string | null;
           nickname?: string | null;
           answers: AnswerRecord;
           assertiveness_raw: number;
@@ -76,9 +84,84 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['results']['Insert']>;
       };
+
+      groups: {
+        Row: {
+          id: string;
+          coach_id: string;
+          name: string;
+          description: string | null;
+          code: string;
+          max_members: number;
+          status: GroupStatus;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          coach_id: string;
+          name: string;
+          description?: string | null;
+          code: string;
+          max_members?: number;
+          status?: GroupStatus;
+          expires_at?: string | null;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          code?: string;
+          max_members?: number;
+          status?: GroupStatus;
+          expires_at?: string | null;
+        };
+      };
+
+      group_members: {
+        Row: {
+          group_id: string;
+          user_id: string;
+          joined_at: string;
+        };
+        Insert: {
+          group_id: string;
+          user_id: string;
+        };
+        Update: never;
+      };
+
+      coach_applications: {
+        Row: {
+          id: string;
+          user_id: string;
+          status: CoachApplicationStatus;
+          motivation: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          review_note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          status?: CoachApplicationStatus;
+          motivation?: string | null;
+        };
+        Update: {
+          status?: CoachApplicationStatus;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          review_note?: string | null;
+        };
+      };
     };
+
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      resolve_group_by_code: {
+        Args: { p_code: string };
+        Returns: string | null;
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };
@@ -87,3 +170,16 @@ export interface Database {
 export type UserRow = Database['public']['Tables']['users']['Row'];
 export type ResultRow = Database['public']['Tables']['results']['Row'];
 export type ResultInsert = Database['public']['Tables']['results']['Insert'];
+
+export type GroupRow = Database['public']['Tables']['groups']['Row'];
+export type GroupInsert = Database['public']['Tables']['groups']['Insert'];
+export type GroupUpdate = Database['public']['Tables']['groups']['Update'];
+
+export type GroupMemberRow = Database['public']['Tables']['group_members']['Row'];
+
+export type CoachApplicationRow =
+  Database['public']['Tables']['coach_applications']['Row'];
+export type CoachApplicationInsert =
+  Database['public']['Tables']['coach_applications']['Insert'];
+export type CoachApplicationUpdate =
+  Database['public']['Tables']['coach_applications']['Update'];

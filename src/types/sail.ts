@@ -224,9 +224,37 @@ export interface TestProgress {
 // ============================================================
 export interface DiagnosisSavePayload {
   nickname: string;
-  sessionCode: string | null;
+  /** 그룹 가입 코드 (5자리, 선택). 서버에서 group_id로 변환됨. */
+  groupCode: string | null;
   answers: AnswerRecord;
   device?: string;
+}
+
+// ============================================================
+// 6. 그룹 시스템 (Phase 7)
+// ============================================================
+
+/** 그룹 코드 형식: 5자리 영숫자 (혼동 글자 0/O/1/I/L 제외) */
+export const GROUP_CODE_ALPHABET =
+  'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 31자
+export const GROUP_CODE_LENGTH = 5;
+export const GROUP_CODE_REGEX = new RegExp(
+  `^[${GROUP_CODE_ALPHABET}]{${GROUP_CODE_LENGTH}}$`
+);
+
+/** 랜덤 5자리 그룹 코드 생성 — 충돌 가능성 있으므로 호출 측에서 retry 처리 */
+export function generateGroupCode(): string {
+  let code = '';
+  for (let i = 0; i < GROUP_CODE_LENGTH; i++) {
+    const idx = Math.floor(Math.random() * GROUP_CODE_ALPHABET.length);
+    code += GROUP_CODE_ALPHABET[idx];
+  }
+  return code;
+}
+
+/** 입력값 정규화 — 대문자로 통일, 공백 제거 */
+export function normalizeGroupCode(input: string): string {
+  return input.trim().toUpperCase().replace(/[\s-_]/g, '');
 }
 
 // ============================================================

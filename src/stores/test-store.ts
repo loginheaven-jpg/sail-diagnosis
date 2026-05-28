@@ -26,7 +26,8 @@ interface TestState {
   /** 현재 Phase 내의 문항 인덱스 (0~9) */
   questionIndex: number;
   nickname: string;
-  sessionCode: string | null;
+  /** 그룹 가입 코드 (5자리 영숫자, 선택) */
+  groupCode: string | null;
   isStarted: boolean;
   isCompleted: boolean;
 
@@ -38,7 +39,7 @@ interface TestState {
 
   // === 액션 ===
   setNickname: (name: string) => void;
-  setSessionCode: (code: string | null) => void;
+  setGroupCode: (code: string | null) => void;
   startTest: () => void;
   answerQuestion: (questionId: string, answer: AnswerValue) => void;
   nextQuestion: () => void;
@@ -53,7 +54,7 @@ const initialState = {
   phase: 1 as Phase,
   questionIndex: 0,
   nickname: '',
-  sessionCode: null,
+  groupCode: null,
   isStarted: false,
   isCompleted: false,
   answers: {} as AnswerRecord,
@@ -66,7 +67,7 @@ export const useTestStore = create<TestState>()(
       ...initialState,
 
       setNickname: (name) => set({ nickname: name }),
-      setSessionCode: (code) => set({ sessionCode: code }),
+      setGroupCode: (code) => set({ groupCode: code }),
 
       startTest: () =>
         set({ isStarted: true, isCompleted: false, phase: 1, questionIndex: 0, result: null }),
@@ -122,7 +123,7 @@ export const useTestStore = create<TestState>()(
         phase: state.phase,
         questionIndex: state.questionIndex,
         nickname: state.nickname,
-        sessionCode: state.sessionCode,
+        groupCode: state.groupCode,
         isStarted: state.isStarted,
         isCompleted: state.isCompleted,
         answers: state.answers,
