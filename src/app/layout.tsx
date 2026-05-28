@@ -2,15 +2,26 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'SAIL — 코칭 스타일 진단',
+  title: 'SAIL — 소통 스타일 진단',
   description:
-    '당신은 어떤 항해 스타일의 코치입니까? 30문항으로 알아보는 4유형 행동 스타일 진단 — Skipper · Adventurer · Interpreter · Lifeguard.',
+    '당신은 이 항해에서 어떤 역할을 하고 있습니까? 30문항으로 알아보는 4유형 소통 스타일 진단 — Skipper · Adventurer · Interpreter · Lifeguard.',
   applicationName: 'SAIL',
   authors: [{ name: 'SAIL Diagnosis' }],
-  keywords: ['SAIL', '코칭', '진단', 'Skipper', 'Adventurer', 'Interpreter', 'Lifeguard', 'Social Styles'],
+  keywords: [
+    'SAIL',
+    '소통',
+    '진단',
+    '소통 스타일',
+    'Skipper',
+    'Adventurer',
+    'Interpreter',
+    'Lifeguard',
+    'Social Styles',
+    'Merrill-Reid',
+  ],
   openGraph: {
-    title: 'SAIL — 코칭 스타일 진단',
-    description: '나는 어떤 항해 스타일의 코치인가? 30문항 4유형 진단.',
+    title: 'SAIL — 소통 스타일 진단',
+    description: '당신은 이 항해에서 어떤 역할을 하고 있습니까? 30문항 4유형 진단.',
     type: 'website',
     locale: 'ko_KR',
   },

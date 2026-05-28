@@ -14,23 +14,54 @@ export default function Home() {
 
         {/* 타이틀 */}
         <h1 className="mb-4 text-display font-bold tracking-tight text-sail-gray-900 sm:text-5xl">
-          당신은 어떤<br />
-          <span className="text-sail-orange">항해 스타일</span>의 코치입니까?
+          당신은 이 항해에서<br />
+          어떤 <span className="text-sail-orange">역할</span>을 하고 있습니까?
         </h1>
 
-        <p className="mx-auto mb-12 max-w-md text-body-lg leading-relaxed text-sail-gray-600">
-          30문항으로 알아보는 4유형 코칭 스타일 진단.
+        <p className="mx-auto mb-3 max-w-md text-body-lg leading-relaxed text-sail-gray-600">
+          Merrill-Reid 이론 기반 30문항 소통 스타일 진단.
           <br />
           7~9분이면 충분합니다.
+        </p>
+        <p className="mx-auto mb-12 max-w-md text-bodySm text-sail-gray-500">
+          주도성(Ask↔Tell) × 감정표현성(Control↔Emote) 두 축으로 자신의 소통 스타일을 확인하세요.
         </p>
 
         {/* 4유형 미리보기 */}
         <div className="mb-12 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { code: 'S', name: 'Skipper', kr: '선장', emoji: '⚓', bg: 'bg-sail-s' },
-            { code: 'A', name: 'Adventurer', kr: '모험가', emoji: '🌅', bg: 'bg-sail-a' },
-            { code: 'I', name: 'Interpreter', kr: '해석가', emoji: '🔭', bg: 'bg-sail-i' },
-            { code: 'L', name: 'Lifeguard', kr: '수호자', emoji: '🛟', bg: 'bg-sail-l' },
+            {
+              code: 'S',
+              name: 'Skipper',
+              kr: '선장',
+              combo: 'Tell+Control',
+              emoji: '⚓',
+              bg: 'bg-sail-s',
+            },
+            {
+              code: 'A',
+              name: 'Adventurer',
+              kr: '모험가',
+              combo: 'Tell+Emote',
+              emoji: '🌅',
+              bg: 'bg-sail-a',
+            },
+            {
+              code: 'I',
+              name: 'Interpreter',
+              kr: '해석가',
+              combo: 'Ask+Control',
+              emoji: '🔭',
+              bg: 'bg-sail-i',
+            },
+            {
+              code: 'L',
+              name: 'Lifeguard',
+              kr: '수호자',
+              combo: 'Ask+Emote',
+              emoji: '🛟',
+              bg: 'bg-sail-l',
+            },
           ].map((t) => (
             <div
               key={t.code}
@@ -39,6 +70,7 @@ export default function Home() {
               <span className="text-2xl">{t.emoji}</span>
               <span className="text-caption font-medium opacity-80">{t.code}</span>
               <span className="text-bodySm font-semibold">{t.kr}</span>
+              <span className="text-tiny font-medium opacity-75">{t.combo}</span>
             </div>
           ))}
         </div>

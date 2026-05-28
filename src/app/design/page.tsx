@@ -100,25 +100,25 @@ export default function DesignSystemPage() {
         <Section id="typography" title="2. 타이포그래피" desc="Pretendard Variable. 본문 15px (KCA 가이드와 동일).">
           <div className="space-y-4 divide-y divide-sail-gray-100">
             <TypeRow label="DISPLAY 32px" className="text-display font-bold text-sail-gray-900">
-              당신은 어떤 항해 스타일의 코치입니까?
+              당신은 이 항해에서 어떤 역할을 하고 있습니까?
             </TypeRow>
             <TypeRow label="H1 28px" className="text-h1 font-bold text-sail-gray-900">
               명확한 S형 (Skipper)
             </TypeRow>
             <TypeRow label="H2 24px" className="text-h2 font-bold text-sail-gray-900">
-              나의 코칭 항해 가이드
+              나의 항해 프로필
             </TypeRow>
             <TypeRow label="H3 20px" className="text-h3 font-bold text-sail-navy">
               강점과 그림자
             </TypeRow>
             <TypeRow label="H4 18px" className="text-h4 font-semibold text-sail-gray-800">
-              피코치 유형별 세션 전략
+              다른 유형과 소통하는 법 (Versatility)
             </TypeRow>
             <TypeRow label="BODY LG 16px" className="text-body-lg text-sail-gray-700">
-              새로운 피코치와의 첫 오리엔테이션 세션이다. 피코치는 다소 긴장한 듯 보인다.
+              팀에 새 프로젝트가 떨어졌다. 첫 회의에서 아직 역할도 방향도 정해지지 않았다.
             </TypeRow>
             <TypeRow label="BODY 15px ★기본" className="text-body text-sail-gray-700">
-              SAIL은 코치와 피코치가 함께 떠나는 항해의 메타포에서 출발한 행동 스타일 진단이다.
+              SAIL은 Merrill-Reid Social Styles Model을 현대적으로 재구성한 소통 스타일 진단이다.
             </TypeRow>
             <TypeRow label="BODY SM 14px" className="text-bodySm text-sail-gray-600">
               보조 텍스트. 카드 하단 설명, 폼 필드 도움말에 사용한다.
@@ -211,7 +211,7 @@ export default function DesignSystemPage() {
               </label>
               <select className="h-11 w-full rounded-input border border-sail-gray-300 bg-white px-3.5 text-body text-sail-gray-900 focus:border-sail-navy focus:shadow-focus focus:outline-none">
                 <option>전체</option>
-                <option>코치</option>
+                <option>직장인</option>
                 <option>팀 리더</option>
                 <option>HR 담당자</option>
               </select>
