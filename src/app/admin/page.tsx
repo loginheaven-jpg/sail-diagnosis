@@ -6,6 +6,7 @@
  * - 사용자 목록 (검색 + 역할 변경)
  */
 
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { AdminClient } from '@/components/admin/AdminClient';
@@ -29,8 +30,8 @@ export default async function AdminPage() {
 
   const svc = createServiceRoleClient();
 
-  // 통계
-  const [usersCount, groupsCount, resultsCount, pendingApps, recentUsers] =
+  // 통계 + 내 그룹 (어드민도 자기 그룹 가질 수 있음)
+  const [usersCount, groupsCount, resultsCount, pendingApps, recentUsers, myGroups] =
     await Promise.all([
       svc.from('users').select('id', { count: 'exact', head: true }),
       svc.from('groups').select('id', { count: 'exact', head: true }),
@@ -47,6 +48,10 @@ export default async function AdminPage() {
         .select('id, full_name, nickname, email, phone, role, created_at')
         .order('created_at', { ascending: false })
         .limit(50),
+      svc
+        .from('groups')
+        .select('id', { count: 'exact', head: true })
+        .eq('coach_id', auth.userId),
     ]);
 
   const stats = {
@@ -69,6 +74,30 @@ export default async function AdminPage() {
         <StatCard label="전체 사용자" value={stats.users} />
         <StatCard label="전체 그룹" value={stats.groups} />
         <StatCard label="누적 진단 결과" value={stats.results} />
+      </section>
+
+      {/* 관리자도 그룹을 만들 수 있다는 안내 + 진입로 */}
+      <section className="rounded-card border border-sail-navy/30 bg-sail-navy-bg p-card">
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-sail-navy text-xl text-white">
+            ⛵
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-h4 font-bold text-sail-gray-900">
+              관리자도 그룹을 만들 수 있습니다
+            </h2>
+            <p className="mt-1 text-bodySm text-sail-gray-700">
+              내가 운영하는 그룹: <strong>{myGroups.count ?? 0}개</strong>{' '}
+              · 코치 대시보드에서 그룹을 만들고 5자리 코드를 발급하세요.
+            </p>
+          </div>
+          <Link
+            href="/coach"
+            className="inline-flex h-10 flex-shrink-0 items-center rounded-button bg-sail-navy px-4 text-bodySm font-semibold text-white hover:bg-sail-navy-light"
+          >
+            코치 대시보드 →
+          </Link>
+        </div>
       </section>
 
       <AdminClient

@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import { GroupDetailClient } from '@/components/coach/GroupDetailClient';
+import { InvitationBlock } from '@/components/coach/InvitationBlock';
 import { TypeDistribution } from '@/components/coach/TypeDistribution';
 import { getAuthContext, hasMinRole } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
@@ -109,6 +110,9 @@ export default async function GroupDetailPage({ params }: PageProps) {
         memberCount={memberList.length}
         resultCount={resultList.length}
       />
+
+      {/* 멤버 초대 (코드 + 직링크 + 초대 메시지 + QR) */}
+      <InvitationBlock group={group} />
 
       {/* 4유형 분포 */}
       {resultList.length > 0 && (

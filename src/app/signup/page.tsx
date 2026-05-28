@@ -44,6 +44,8 @@ function SignupPageContent() {
   const [password, setPassword] = useState('');
   const [passwordCheck, setPasswordCheck] = useState('');
   const [agreed, setAgreed] = useState(false);
+  const [applyAsCoach, setApplyAsCoach] = useState(false);
+  const [coachMotivation, setCoachMotivation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -134,6 +136,26 @@ function SignupPageContent() {
       } catch {
         /* ignore */
       }
+
+      // 2b) 코치로 신청 옵션 — coach_applications에 신청 INSERT
+      if (applyAsCoach) {
+        try {
+          await fetch('/api/coach-applications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              motivation: coachMotivation.trim() || null,
+            }),
+          });
+        } catch {
+          /* ignore — 가입은 성공했으므로 신청 실패는 별도 안내 */
+        }
+        // 코치 신청자는 신청 안내 페이지로
+        router.replace('/coach/apply');
+        router.refresh();
+        return;
+      }
+
       router.replace(redirect);
       router.refresh();
       return;
@@ -252,6 +274,43 @@ function SignupPageContent() {
                 className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
               />
             </div>
+          </div>
+
+          {/* 코치 신청 옵션 */}
+          <div className="rounded-card border border-sail-gray-200 bg-sail-gray-50 p-4">
+            <label className="flex items-start gap-2 text-bodySm text-sail-gray-800">
+              <input
+                type="checkbox"
+                checked={applyAsCoach}
+                onChange={(e) => setApplyAsCoach(e.currentTarget.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-sail-gray-300 text-sail-navy focus:ring-sail-navy"
+              />
+              <span>
+                <strong>코치로 가입 신청</strong>
+                <span className="ml-1.5 rounded-pill bg-sail-navy px-2 py-0.5 text-tiny font-semibold text-white">
+                  심사 필요
+                </span>
+                <span className="mt-1 block text-caption font-normal text-sail-gray-600">
+                  팀·조직·교회에서 그룹을 만들고 멤버들의 진단 결과를 관리하는 코치 권한을 신청합니다.
+                  관리자가 검토 후 승인합니다.
+                </span>
+              </span>
+            </label>
+            {applyAsCoach && (
+              <div className="mt-3 ml-6">
+                <label className="mb-1 block text-caption font-semibold text-sail-gray-700">
+                  신청 사유 (선택, 최대 500자)
+                </label>
+                <textarea
+                  value={coachMotivation}
+                  onChange={(e) => setCoachMotivation(e.currentTarget.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="어떤 목적으로 코치 권한이 필요한지 짧게 적어주시면 검토가 빨라집니다."
+                  className="w-full rounded-input border border-sail-gray-300 bg-white px-3 py-2 text-bodySm focus:border-sail-navy focus:shadow-focus focus:outline-none"
+                />
+              </div>
+            )}
           </div>
 
           <label className="flex items-start gap-2 text-bodySm text-sail-gray-700">
