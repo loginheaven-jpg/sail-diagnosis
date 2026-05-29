@@ -1,9 +1,9 @@
 /**
- * Header — 전역 헤더 (Server Component)
+ * Header — v2.0 Quiet Luxury
  *
- * - 로고
- * - 진단 / 디자인 시스템 메뉴
- * - 로그인 상태: 미로그인이면 로그인 버튼, 로그인 상태면 닉네임 + role 메뉴
+ * 디자인: 시안 sail_landing_final.html의 header를 React 컴포넌트화
+ * - 좌측: 컴퍼스 SVG 아이콘 + SAIL 브랜드 마크 (Cormorant 600, 골드 소프트, ls 0.3em)
+ * - 우측: 멤버는 진단 시작 CTA (테두리 골드), 로그인 상태면 역할 chip + 닉네임
  */
 
 import Link from 'next/link';
@@ -14,7 +14,6 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
 export async function Header() {
   const auth = await getAuthContext();
 
-  // full_name 우선 표시 — 없으면 nickname → 이메일 prefix
   let displayName: string | null = null;
   if (auth) {
     const svc = createServiceRoleClient();
@@ -28,60 +27,80 @@ export async function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-sail-gray-200 bg-white/95 backdrop-blur-sm">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-bold text-sail-navy"
+    <header
+      className="relative z-50 mx-auto flex w-full max-w-[1180px] items-center justify-between px-8 py-8 md:px-8"
+      style={{ paddingLeft: 'clamp(22px, 4vw, 32px)', paddingRight: 'clamp(22px, 4vw, 32px)' }}
+    >
+      <Link href="/" className="flex items-center gap-3">
+        <CompassMark />
+        <span
+          className="font-serif text-sail-gold-soft"
+          style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '0.3em' }}
         >
-          <span
-            aria-hidden
-            className="flex h-8 w-8 items-center justify-center rounded-md bg-sail-orange text-white"
-          >
-            ⛵
-          </span>
-          <span>SAIL</span>
+          SAIL
+        </span>
+      </Link>
+
+      <nav className="flex items-center gap-6 md:gap-9 text-bodySm">
+        <Link
+          href="/guide"
+          className="hidden text-sail-mist transition hover:text-sail-gold-soft md:inline"
+          style={{ letterSpacing: '0.05em' }}
+        >
+          유형 가이드
         </Link>
 
-        <nav className="hidden items-center gap-1 text-bodySm md:flex">
+        {auth && (auth.role === 'coach' || auth.role === 'admin') && (
           <Link
-            href="/test"
-            className="rounded-md px-3 py-1.5 text-sail-gray-700 transition hover:bg-sail-gray-100 hover:text-sail-navy"
+            href="/coach"
+            className="hidden text-sail-mist transition hover:text-sail-gold-soft md:inline"
+            style={{ letterSpacing: '0.05em' }}
           >
-            진단하기
+            코치 대시보드
           </Link>
-          {auth && (auth.role === 'coach' || auth.role === 'admin') && (
-            <Link
-              href="/coach"
-              className="rounded-md px-3 py-1.5 text-sail-gray-700 transition hover:bg-sail-gray-100 hover:text-sail-navy"
-            >
-              코치 대시보드
-            </Link>
-          )}
-          {auth?.role === 'admin' && (
-            <Link
-              href="/admin"
-              className="rounded-md px-3 py-1.5 text-sail-gray-700 transition hover:bg-sail-gray-100 hover:text-sail-navy"
-            >
-              관리자
-            </Link>
-          )}
-        </nav>
+        )}
+        {auth?.role === 'admin' && (
+          <Link
+            href="/admin"
+            className="hidden text-sail-mist transition hover:text-sail-gold-soft md:inline"
+            style={{ letterSpacing: '0.05em' }}
+          >
+            관리자
+          </Link>
+        )}
 
-        <div className="flex items-center gap-2 text-bodySm">
-          {auth ? (
-            <UserChip auth={auth} displayName={displayName} />
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-button bg-sail-navy px-4 py-1.5 font-semibold text-white transition hover:bg-sail-navy-light"
-            >
-              로그인
-            </Link>
-          )}
-        </div>
-      </div>
+        {auth ? (
+          <UserChip auth={auth} displayName={displayName} />
+        ) : (
+          <Link
+            href="/login"
+            className="rounded-btn border border-sail-gold/40 px-5 py-2.5 text-sail-gold-soft transition hover:bg-sail-gold/10"
+            style={{ letterSpacing: '0.05em' }}
+          >
+            진단 시작
+          </Link>
+        )}
+      </nav>
     </header>
+  );
+}
+
+function CompassMark() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={26}
+      height={26}
+      fill="none"
+      stroke="#E0C977"
+      strokeWidth={1.2}
+      className="opacity-90"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polygon points="12,5 14,12 12,19 10,12" fill="#C9A227" stroke="none" />
+      <polygon points="5,12 12,10 19,12 12,14" fill="rgba(127,212,208,.5)" stroke="none" />
+    </svg>
   );
 }
 
@@ -89,32 +108,38 @@ function UserChip({
   auth,
   displayName,
 }: {
-  auth: { userId: string; role: 'user' | 'coach' | 'admin'; email: string | null };
+  auth: {
+    userId: string;
+    role: 'user' | 'coach' | 'admin';
+    email: string | null;
+  };
   displayName: string | null;
 }) {
   const roleLabel =
     auth.role === 'admin' ? '관리자' : auth.role === 'coach' ? '코치' : '멤버';
   const roleClass =
     auth.role === 'admin'
-      ? 'bg-sail-orange text-white'
+      ? 'bg-sail-gold text-sail-abyss border border-sail-gold-soft/60'
       : auth.role === 'coach'
-        ? 'bg-sail-navy text-white'
-        : 'bg-sail-gray-200 text-sail-gray-700';
+        ? 'bg-sail-navy text-sail-paper border border-sail-gold-soft/40'
+        : 'bg-transparent border border-sail-mist/30 text-sail-mist';
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <span
-        className={`rounded-pill px-2.5 py-0.5 text-tiny font-semibold ${roleClass}`}
+        className={`rounded-pill px-3 py-1 text-tiny font-semibold ${roleClass}`}
+        style={{ fontSize: '11px', letterSpacing: '0.18em', fontFamily: 'var(--font-serif)' }}
       >
         {roleLabel}
       </span>
-      <span className="hidden text-sail-gray-700 sm:inline">
+      <span className="hidden text-sail-mist sm:inline" style={{ letterSpacing: '0.03em' }}>
         {displayName ?? '사용자'}
       </span>
       <form action="/auth/signout" method="POST">
         <button
           type="submit"
-          className="rounded-md px-2 py-1 text-tiny text-sail-gray-500 transition hover:bg-sail-gray-100 hover:text-sail-danger"
+          className="rounded-btn px-2 py-1 text-tiny text-sail-mist transition hover:text-sail-danger"
+          style={{ fontSize: '11px', letterSpacing: '0.1em' }}
         >
           로그아웃
         </button>

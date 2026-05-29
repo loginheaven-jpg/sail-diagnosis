@@ -1,89 +1,93 @@
 @import "tailwindcss";
 
 /*
- * SAIL Design System v1.0
+ * SAIL Design System v2.0 — Quiet Luxury
  * 단일 원천: SAIL_DESIGN_SYSTEM.md, src/styles/tokens.ts
  *
- * 이 파일은 Tailwind v4의 @theme 블록을 통해 토큰을 Tailwind 클래스로 노출한다.
- * 코드에 색상 hex를 직접 박지 말고 다음 클래스를 사용하라:
- *   - 색상:  bg-sail-s, text-sail-navy, border-sail-orange
- *   - 간격:  p-card, px-page
- *   - radius: rounded-card, rounded-question
- *   - shadow: shadow-card-hover, shadow-focus
- *   - 시멘틱 폰트: text-body, text-h2
+ * 다크 테마 메인:
+ *   - 배경: 심해 네이비 #0A1628
+ *   - 본문 텍스트: 해도 미색 #F4EFE6
+ *   - 악센트: 황동 골드 #C9A227
+ *   - 폰트: Cormorant Garamond (디스플레이) + 고운바탕 (한글 본문)
+ *   - 분위기: 그라데이션 메시 + 노이즈 그레인 (필수)
+ *
+ * Tailwind 사용 패턴 (자주 쓰는 클래스):
+ *   - 색상:  bg-sail-abyss, bg-sail-deep, bg-sail-navy, bg-sail-gold,
+ *           text-sail-paper, text-sail-mist, text-sail-gold, text-sail-gold-soft
+ *   - 유형:  bg-sail-s, bg-sail-a, bg-sail-i, bg-sail-l (4유형 색)
+ *   - 시멘틱: text-sail-success, text-sail-danger
+ *   - 폰트:  font-serif, font-korean, font-mono
+ *   - 시멘틱 typography: text-hero, text-display, text-h1, text-h2, text-h3,
+ *                       text-body-lg, text-body, text-body-sm, text-caption, text-label
+ *   - radius: rounded-btn (2px), rounded-card (3px), rounded-modal (4px), rounded-pill
+ *   - shadow: shadow-gold, shadow-modal, shadow-compass
  */
 
 @theme {
   /* ============================================================
-   * SAIL Type Colors (4유형 도메인 색상)
+   * SAIL Type Colors (4유형 — 다크 배경 최적화)
    * ============================================================ */
-  --color-sail-s: #1E3A5F;
+  --color-sail-s: #F4EFE6;          /* S형 텍스트는 미색으로 (네이비는 배경과 동화) */
+  --color-sail-s-surface: #1E3A5F;  /* S형 배지/면적용 */
   --color-sail-a: #F28C38;
-  --color-sail-i: #6B3FA0;
-  --color-sail-l: #2E9E6B;
+  --color-sail-i: #9B7BC9;
+  --color-sail-l: #3DB389;
 
-  /* Quadrant tints (나침반 사분면 배경) */
-  --color-sail-s-tint: rgba(30, 58, 95, 0.06);
+  /* Quadrant tints */
+  --color-sail-s-tint: rgba(244, 239, 230, 0.04);
   --color-sail-a-tint: rgba(242, 140, 56, 0.06);
-  --color-sail-i-tint: rgba(107, 63, 160, 0.06);
-  --color-sail-l-tint: rgba(46, 158, 107, 0.06);
+  --color-sail-i-tint: rgba(155, 123, 201, 0.06);
+  --color-sail-l-tint: rgba(61, 179, 137, 0.06);
 
   /* ============================================================
-   * Primary / Accent (시스템 컬러 — S형 Navy, A형 Orange와 동일)
+   * Quiet Luxury 코어 팔레트
    * ============================================================ */
+  --color-sail-abyss: #0A1628;
+  --color-sail-deep: #0F2438;
   --color-sail-navy: #1E3A5F;
-  --color-sail-navy-light: #2D4F7B;
-  --color-sail-navy-dark: #14283F;
-  --color-sail-navy-bg: #EFF3F8;
-
-  --color-sail-orange: #F28C38;
-  --color-sail-orange-hover: #DC7A2A;
-  --color-sail-orange-bg: #FFF4E6;
-
-  /* ============================================================
-   * Neutral (Slate scale)
-   * ============================================================ */
-  --color-sail-gray-50: #F8FAFC;
-  --color-sail-gray-100: #F1F5F9;
-  --color-sail-gray-200: #E2E8F0;
-  --color-sail-gray-300: #CBD5E1;
-  --color-sail-gray-400: #94A3B8;
-  --color-sail-gray-500: #64748B;
-  --color-sail-gray-600: #475569;
-  --color-sail-gray-700: #334155;
-  --color-sail-gray-800: #1E293B;
-  --color-sail-gray-900: #0F172A;
+  --color-sail-slate: #2A4D6E;
+  --color-sail-gold: #C9A227;
+  --color-sail-gold-soft: #E0C977;
+  --color-sail-mist: #A9BBD0;
+  --color-sail-paper: #F4EFE6;
+  --color-sail-foam: #7FD4D0;
 
   /* ============================================================
    * Semantic
    * ============================================================ */
-  --color-sail-success: #16A34A;
-  --color-sail-warning: #F59E0B;
-  --color-sail-danger: #DC2626;
-  --color-sail-info: #0EA5E9;
+  --color-sail-success: #4ADE80;
+  --color-sail-warning: #FBBF24;
+  --color-sail-danger: #F87171;
+  --color-sail-info: #38BDF8;
 
   /* ============================================================
-   * Page-level backgrounds
+   * Page-level (다크 메인)
    * ============================================================ */
-  --color-background: var(--color-sail-gray-50);
-  --color-surface: #FFFFFF;
-  --color-foreground: var(--color-sail-gray-700);
-  --color-heading: var(--color-sail-gray-900);
+  --color-background: var(--color-sail-abyss);
+  --color-surface: var(--color-sail-deep);
+  --color-foreground: var(--color-sail-paper);
+  --color-heading: var(--color-sail-paper);
+  --color-muted: var(--color-sail-mist);
 
   /* ============================================================
-   * Typography
+   * Typography — 듀얼 세리프
    * ============================================================ */
-  --font-sans: 'Pretendard Variable', 'Pretendard', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-korean: 'Gowun Batang', 'Nanum Myeongjo', Georgia, serif;
+  --font-sans: 'Gowun Batang', 'Nanum Myeongjo', Georgia, serif; /* 기본 폰트도 korean로 매핑 */
   --font-mono: var(--font-geist-mono), 'Consolas', monospace;
 
-  /* Type scale (Tailwind 시멘틱 클래스용) */
-  --text-display: 32px;
-  --text-display--line-height: 1.25;
-  --text-display--letter-spacing: -0.02em;
+  /* Type scale */
+  --text-hero: 64px;
+  --text-hero--line-height: 1.12;
+  --text-hero--letter-spacing: -0.01em;
 
-  --text-h1: 28px;
-  --text-h1--line-height: 1.3;
-  --text-h1--letter-spacing: -0.02em;
+  --text-display: 44px;
+  --text-display--line-height: 1.2;
+  --text-display--letter-spacing: -0.005em;
+
+  --text-h1: 34px;
+  --text-h1--line-height: 1.25;
 
   --text-h2: 24px;
   --text-h2--line-height: 1.35;
@@ -91,102 +95,259 @@
   --text-h3: 20px;
   --text-h3--line-height: 1.4;
 
-  --text-h4: 18px;
-  --text-h4--line-height: 1.4;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 1.8;
 
-  --text-body-lg: 16px;
-  --text-body-lg--line-height: 1.6;
+  --text-body: 16px;
+  --text-body--line-height: 1.75;
 
-  --text-body: 15px;
-  --text-body--line-height: 1.6;
-
-  --text-body-sm: 14px;
-  --text-body-sm--line-height: 1.5;
+  --text-body-sm: 14.5px;
+  --text-body-sm--line-height: 1.7;
 
   --text-caption: 13px;
   --text-caption--line-height: 1.5;
 
-  --text-tiny: 12px;
-  --text-tiny--line-height: 1.4;
+  --text-label: 11px;
+  --text-label--line-height: 1.4;
+  --text-label--letter-spacing: 0.28em;
+
+  --text-axis: 10.5px;
+  --text-axis--line-height: 1.4;
+  --text-axis--letter-spacing: 0.12em;
 
   /* ============================================================
-   * Spacing (시멘틱 alias)
+   * Spacing
    * ============================================================ */
-  --spacing-card: 24px;
-  --spacing-question: 32px;
-  --spacing-topbar: 60px;
+  --spacing-card: 34px;
+  --spacing-card-y: 26px;
+  --spacing-question: 36px;
+  --spacing-topbar: 88px;
   --spacing-content: 720px;
-  --spacing-page: 1200px;
+  --spacing-page: 1180px;
 
   /* ============================================================
-   * Border Radius
+   * Border Radius — 정제된 모서리
    * ============================================================ */
-  --radius-button: 10px;
-  --radius-input: 10px;
-  --radius-card: 16px;        /* 일반 카드 (rounded-2xl 대응) */
-  --radius-question: 20px;    /* 문항 카드, 모달 외곽 */
+  --radius-btn: 2px;
+  --radius-input: 2px;
+  --radius-card: 3px;
+  --radius-modal: 4px;
+  --radius-question: 4px;
+  --radius-alert: 3px;
   --radius-pill: 999px;
-  --radius-alert: 12px;
 
   /* ============================================================
-   * Shadow
+   * Shadow / Glow
    * ============================================================ */
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06);
-  --shadow-card-hover: 0 4px 16px rgba(15, 23, 42, 0.10);
-  --shadow-modal: 0 16px 48px rgba(15, 23, 42, 0.18);
-  --shadow-focus: 0 0 0 3px rgba(30, 58, 95, 0.12);
-  --shadow-focus-danger: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  --shadow-gold: 0 8px 30px -8px rgba(201, 162, 39, 0.5);
+  --shadow-gold-hover: 0 14px 40px -8px rgba(201, 162, 39, 0.65);
+  --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --shadow-compass: 0 0 50px rgba(127, 212, 208, 0.16);
+  --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.18);
+  --shadow-card-hover: 0 10px 50px rgba(0, 0, 0, 0.28);
+  --shadow-focus: 0 0 0 2px #E0C977;
 
   /* ============================================================
-   * Motion
+   * Motion easings
    * ============================================================ */
-  --ease-out-sail: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-sail: cubic-bezier(0.2, 0.7, 0.3, 1);
   --ease-in-out-sail: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-spring-sail: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ============================================================
+   * 호환 토큰 (v1.0 클래스명 매핑 — 기존 컴포넌트 안전)
+   *   레거시 클래스명(bg-sail-navy-bg, bg-sail-gray-50 등)을
+   *   새 다크 톤에 매핑해서 즉시 다크화. 점진적으로 새 이름 사용 권장.
+   * ============================================================ */
+  --color-sail-navy-light: var(--color-sail-slate);
+  --color-sail-navy-dark: var(--color-sail-abyss);
+  --color-sail-navy-bg: rgba(30, 58, 95, 0.18);
+
+  --color-sail-orange: var(--color-sail-gold);
+  --color-sail-orange-hover: var(--color-sail-gold-soft);
+  --color-sail-orange-bg: rgba(201, 162, 39, 0.10);
+
+  /* gray-50 ~ 900: 다크 톤 카드/표면용으로 매핑 */
+  --color-sail-gray-50: rgba(244, 239, 230, 0.04);  /* 매우 옅은 paper */
+  --color-sail-gray-100: rgba(169, 187, 208, 0.06);
+  --color-sail-gray-200: rgba(169, 187, 208, 0.12); /* 보더 기본 */
+  --color-sail-gray-300: rgba(169, 187, 208, 0.20);
+  --color-sail-gray-400: rgba(169, 187, 208, 0.40);
+  --color-sail-gray-500: #A9BBD0;                   /* mist */
+  --color-sail-gray-600: #A9BBD0;
+  --color-sail-gray-700: #F4EFE6;                   /* paper (본문) */
+  --color-sail-gray-800: #F4EFE6;
+  --color-sail-gray-900: #F4EFE6;
 }
 
 /* ============================================================
  * Base styles
  * ============================================================ */
 html, body {
-  font-family: var(--font-sans);
-  color: var(--color-foreground);
-  background: var(--color-background);
-  font-feature-settings: 'cv11', 'ss01';
+  background: var(--color-sail-abyss);
+  color: var(--color-sail-paper);
+  font-family: var(--font-korean);
+  font-size: 16px;
+  line-height: 1.75;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
-body {
-  font-size: var(--text-body);
-  line-height: var(--text-body--line-height);
-}
+html { scroll-behavior: smooth; }
 
+/* 영문 헤딩은 자동으로 세리프 — 한글이 섞이면 고운바탕이 받아냄 */
 h1, h2, h3, h4, h5, h6 {
-  color: var(--color-heading);
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-family: var(--font-serif), var(--font-korean);
+  color: var(--color-sail-paper);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+p, span, div, button, input, textarea, select {
+  font-family: var(--font-korean);
+}
+
+/* mono utility 보호 */
+.font-mono, code, pre {
+  font-family: var(--font-mono);
 }
 
 a {
-  color: var(--color-sail-navy);
+  color: var(--color-sail-gold-soft);
   text-decoration: none;
-  transition: color 200ms var(--ease-out-sail);
+  transition: color 300ms var(--ease-out-sail);
 }
-a:hover { color: var(--color-sail-navy-light); }
+a:hover { color: var(--color-sail-gold); }
 
 /* ============================================================
- * Focus ring (keyboard only, mouse-hidden)
+ * Atmosphere — 그라데이션 메시 (전역 배경 레이어, fixed)
  * ============================================================ */
-:focus-visible {
-  outline: 2px solid var(--color-sail-navy);
-  outline-offset: 2px;
-  border-radius: 6px;
+.atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(30, 58, 95, 0.55), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 85% 20%, rgba(201, 162, 39, 0.10), transparent 55%),
+    radial-gradient(ellipse 90% 60% at 50% 100%, rgba(15, 36, 56, 0.8), transparent 70%),
+    var(--color-sail-abyss);
 }
 
-:focus:not(:focus-visible) {
-  outline: none;
+/* ============================================================
+ * Grain — 노이즈 그레인 (밴딩 제거 + 종이 질감)
+ * ============================================================ */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+
+/* Horizon — 수평선 빛띠 (랜딩 권장, 옵션) */
+.horizon {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 42%;
+  height: 1px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(127, 212, 208, 0.25) 30%,
+    rgba(224, 201, 119, 0.3) 50%,
+    rgba(127, 212, 208, 0.25) 70%,
+    transparent
+  );
+  box-shadow: 0 0 60px 8px rgba(127, 212, 208, 0.08);
+}
+
+/* 콘텐츠는 분위기 위로 */
+body > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* ============================================================
+ * Compass — 회전 다이얼 + 물결 링 (브랜드 시그니처)
+ * ============================================================ */
+.compass-ring {
+  position: relative;
+}
+
+.compass-ring svg.dial {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 50px rgba(127, 212, 208, 0.16));
+}
+
+.rotate-slow {
+  transform-origin: center;
+  animation: compass-spin 72s linear infinite;
+}
+
+.ripple {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(127, 212, 208, 0.2);
+  border-radius: 50%;
+  animation: compass-ripple 6s ease-out infinite;
+  pointer-events: none;
+}
+.ripple:nth-child(2) { animation-delay: 2s; }
+.ripple:nth-child(3) { animation-delay: 4s; }
+
+@keyframes compass-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes compass-ripple {
+  0%   { transform: scale(0.7); opacity: 0.5; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+
+/* ============================================================
+ * Staggered Rise — 페이지 로드 시 요소별 시차 등장
+ *   사용: <div class="rise" style="--delay:0.4s">…</div>
+ * ============================================================ */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.rise {
+  opacity: 0;
+  animation: rise 900ms var(--ease-out-sail) forwards;
+  animation-delay: var(--delay, 0.1s);
+}
+
+.rise-1 { opacity: 0; animation: rise 900ms 0.1s var(--ease-out-sail) forwards; }
+.rise-2 { opacity: 0; animation: rise 900ms 0.25s var(--ease-out-sail) forwards; }
+.rise-3 { opacity: 0; animation: rise 900ms 0.4s var(--ease-out-sail) forwards; }
+.rise-4 { opacity: 0; animation: rise 900ms 0.5s var(--ease-out-sail) forwards; }
+.rise-5 { opacity: 0; animation: rise 900ms 0.6s var(--ease-out-sail) forwards; }
+.rise-6 { opacity: 0; animation: rise 900ms 0.75s var(--ease-out-sail) forwards; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.fade-in { opacity: 0; animation: fade-in 1.4s 0.7s ease-out forwards; }
+
+/* ============================================================
+ * Focus — 접근성
+ * ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--color-sail-gold-soft);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
 
 /* ============================================================
  * Reduced motion (사용자 설정 존중)
@@ -198,12 +359,55 @@ a:hover { color: var(--color-sail-navy-light); }
     transition-duration: 50ms !important;
     scroll-behavior: auto !important;
   }
+  .rotate-slow, .ripple { animation: none !important; }
+  .rise, [class*='rise-'] {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 /* ============================================================
  * Selection
  * ============================================================ */
 ::selection {
-  background: var(--color-sail-orange-bg);
-  color: var(--color-sail-navy-dark);
+  background: rgba(201, 162, 39, 0.35);
+  color: var(--color-sail-paper);
+}
+
+/* ============================================================
+ * 한글 본문에서 영문/숫자가 섞일 때 자연스러운 폴백
+ * ============================================================ */
+.font-serif {
+  font-family: var(--font-serif), var(--font-korean);
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+.font-korean {
+  font-family: var(--font-korean);
+}
+
+/* ============================================================
+ * Quad label utility — 나침반 사분면 라벨용
+ * ============================================================ */
+.quad-label {
+  text-align: center;
+}
+.quad-label .ko {
+  font-family: var(--font-serif), var(--font-korean);
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.quad-label .en {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  color: var(--color-sail-mist);
+  margin-top: 2px;
+}
+.quad-label .axis {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+  margin-top: 3px;
+  color: var(--color-sail-mist);
 }

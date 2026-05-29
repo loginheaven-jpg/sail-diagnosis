@@ -38,13 +38,23 @@ export default function RootLayout({
   return (
     <html lang="ko" className="h-full antialiased">
       <head>
-        {/* Pretendard Variable Font — KCA 디자인 시스템과 동일 */}
+        {/* Cormorant Garamond (디스플레이) + Gowun Batang (한글 본문) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Gowun+Batang:wght@400;700&display=swap"
           rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-(--color-background) text-(--color-foreground)">
+      <body className="min-h-full flex flex-col">
+        {/* 분위기 레이어 (전역) — atmosphere + grain. fixed로 항상 깔림. */}
+        <div className="atmosphere" aria-hidden="true" />
+        <div className="grain" aria-hidden="true" />
+
         <Suspense fallback={null}>
           <Header />
         </Suspense>
