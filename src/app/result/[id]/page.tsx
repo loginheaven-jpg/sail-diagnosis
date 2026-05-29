@@ -92,16 +92,24 @@ export default async function ResultPage({ params }: PageProps) {
   };
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-6 md:py-10">
+    <main className="mx-auto w-full max-w-3xl flex-1 space-y-7 px-4 py-7 md:py-12">
       {/* 헤더 — 홈 링크 + 진단 일시 */}
-      <div className="flex items-center justify-between text-bodySm">
+      <div
+        className="flex items-center justify-between"
+        style={{
+          fontSize: 12,
+          letterSpacing: '0.15em',
+          fontFamily: 'var(--font-serif)',
+        }}
+      >
         <Link
           href="/"
-          className="text-sail-gray-500 transition hover:text-sail-navy"
+          className="text-sail-mist transition-colors duration-300 hover:text-sail-gold"
+          style={{ letterSpacing: '0.15em' }}
         >
           ← SAIL 홈
         </Link>
-        <span className="text-sail-gray-400">
+        <span className="text-sail-mist/60" style={{ letterSpacing: '0.2em' }}>
           {new Date(result.created_at).toLocaleDateString('ko-KR', {
             year: 'numeric',
             month: 'long',
@@ -148,16 +156,35 @@ export default async function ResultPage({ params }: PageProps) {
 
       {/* 일관성 경고 (해당 시만) */}
       {result.consistency_score !== null && Number(result.consistency_score) < 75 && (
-        <div className="rounded-alert border-l-4 border-sail-warning bg-amber-50 px-4 py-3 text-bodySm text-amber-900">
-          ⚠️ 응답 일관성 점수: {Number(result.consistency_score).toFixed(0)}%.
+        <div
+          className="rounded-alert border-l-2 px-5 py-4"
+          style={{
+            background: 'rgba(232, 168, 56, 0.08)',
+            borderColor: 'var(--color-sail-warning)',
+            color: 'var(--color-sail-paper)',
+            fontSize: 13,
+            lineHeight: 1.7,
+            letterSpacing: '0.01em',
+          }}
+        >
+          <span style={{ color: 'var(--color-sail-warning)', fontWeight: 600 }}>
+            ⚠ 응답 일관성 {Number(result.consistency_score).toFixed(0)}%
+          </span>{' '}
           {Number(result.consistency_score) < 50
-            ? ' 응답에 모순이 많아 결과 해석에 주의가 필요합니다. 직관적으로 다시 응답해 보시면 도움이 됩니다.'
-            : ' 응답에 약간의 모순이 있어 결과 해석에 참고가 필요합니다.'}
+            ? '— 응답에 모순이 많아 결과 해석에 주의가 필요합니다. 직관적으로 다시 응답해 보시면 도움이 됩니다.'
+            : '— 응답에 약간의 모순이 있어 결과 해석에 참고가 필요합니다.'}
         </div>
       )}
 
-      <footer className="pt-6 pb-10 text-center text-tiny text-sail-gray-500">
-        SAIL · Merrill-Reid Social Styles Model 기반
+      <footer
+        className="pt-8 pb-12 text-center font-serif text-sail-mist/50"
+        style={{
+          fontSize: 11,
+          letterSpacing: '0.3em',
+          fontWeight: 400,
+        }}
+      >
+        SAIL · MERRILL-REID SOCIAL STYLES
       </footer>
     </main>
   );

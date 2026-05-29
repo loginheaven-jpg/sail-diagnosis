@@ -1,5 +1,8 @@
 /**
- * PercentBar — 4유형 확률 분포 (가로 막대)
+ * PercentBar — 4유형 확률 분포 (Quiet Luxury v2.0)
+ *
+ * 가로 막대 4개. 다크 배경, 골드 액센트 + 유형 컬러는 막대에만.
+ * dominantType은 골드 라벨로 표시.
  */
 
 import {
@@ -14,56 +17,136 @@ interface PercentBarProps {
   dominantType: SailType;
 }
 
-const TYPE_BG_CLASS: Record<SailType, string> = {
-  S: 'bg-sail-s',
-  A: 'bg-sail-a',
-  I: 'bg-sail-i',
-  L: 'bg-sail-l',
+const TYPE_HEX: Record<SailType, string> = {
+  S: '#1E3A5F',
+  A: '#F28C38',
+  I: '#6B3FA0',
+  L: '#2E9E6B',
 };
 
 export function PercentBar({ probabilities, dominantType }: PercentBarProps) {
   return (
-    <section className="rounded-card border border-sail-gray-200 bg-white p-card shadow-card">
-      <h2 className="mb-2 text-h3 font-bold text-sail-navy">4유형 확률 분포</h2>
-      <p className="mb-5 text-bodySm text-sail-gray-600">
+    <section
+      className="rounded-modal border p-7 md:p-9"
+      style={{
+        background:
+          'linear-gradient(180deg, rgba(15,36,56,0.6) 0%, rgba(10,22,40,0.7) 100%)',
+        borderColor: 'rgba(201,162,39,0.15)',
+      }}
+    >
+      <p
+        className="font-serif text-sail-gold"
+        style={{
+          fontSize: 11,
+          letterSpacing: '0.32em',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+        }}
+      >
+        Distribution
+      </p>
+      <h2
+        className="mt-2 font-serif text-sail-paper"
+        style={{
+          fontSize: 'clamp(22px, 2.6vw, 26px)',
+          fontWeight: 500,
+          letterSpacing: '-0.01em',
+          lineHeight: 1.3,
+        }}
+      >
+        네 유형 확률 분포
+      </h2>
+      <p
+        className="mt-2 text-sail-mist/80"
+        style={{ fontSize: 14, lineHeight: 1.7 }}
+      >
         당신의 응답이 네 유형에 얼마나 가까운지 — 합계 100%
       </p>
-      <div className="space-y-3">
+
+      <div className="mt-7 space-y-5">
         {SAIL_TYPE_LIST.map((t) => {
           const info = SAIL_TYPES[t];
           const pct = probabilities[t];
           const isDominant = t === dominantType;
+          const typeHex = TYPE_HEX[t];
+
           return (
             <div key={t}>
-              <div className="mb-1 flex items-baseline justify-between">
+              <div className="mb-2 flex items-baseline justify-between gap-3">
                 <span
-                  className={`text-bodySm font-semibold ${isDominant ? 'text-sail-gray-900' : 'text-sail-gray-700'}`}
+                  className="flex items-baseline gap-2.5 min-w-0"
+                  style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: 14,
+                    color: isDominant
+                      ? 'var(--color-sail-paper)'
+                      : 'var(--color-sail-mist)',
+                  }}
                 >
-                  <span aria-hidden className="mr-1.5">
+                  <span aria-hidden style={{ fontSize: 16 }}>
                     {info.emoji}
                   </span>
-                  {info.koreanName} <span className="opacity-60">({t}형)</span>
+                  <span style={{ fontWeight: isDominant ? 600 : 500 }}>
+                    {info.englishName}
+                  </span>
+                  <span
+                    className="text-sail-mist/60"
+                    style={{ fontSize: 12, letterSpacing: '0.05em' }}
+                  >
+                    {t}
+                  </span>
                   {isDominant && (
-                    <span className="ml-2 rounded-pill bg-sail-orange-bg px-2 py-0.5 text-tiny font-semibold text-sail-orange">
-                      주 유형
+                    <span
+                      className="font-serif text-sail-gold"
+                      style={{
+                        fontSize: 10,
+                        letterSpacing: '0.22em',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        marginLeft: 4,
+                      }}
+                    >
+                      · primary
                     </span>
                   )}
                 </span>
                 <span
-                  className={`font-mono text-bodySm font-semibold ${isDominant ? 'text-sail-gray-900' : 'text-sail-gray-600'}`}
+                  style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: isDominant ? 18 : 15,
+                    fontWeight: isDominant ? 600 : 400,
+                    color: isDominant
+                      ? 'var(--color-sail-gold)'
+                      : 'var(--color-sail-mist)',
+                    letterSpacing: '0.02em',
+                    flexShrink: 0,
+                  }}
                 >
                   {pct.toFixed(1)}%
                 </span>
               </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-pill bg-sail-gray-100">
+
+              <div
+                className="h-1.5 w-full overflow-hidden rounded-full"
+                style={{ background: 'rgba(232,237,242,0.06)' }}
+              >
                 <div
-                  className={`h-full rounded-pill transition-all ${TYPE_BG_CLASS[t]}`}
-                  style={{ width: `${pct}%` }}
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${pct}%`,
+                    background: isDominant
+                      ? `linear-gradient(90deg, ${typeHex} 0%, var(--color-sail-gold) 100%)`
+                      : `linear-gradient(90deg, ${typeHex}88 0%, ${typeHex}55 100%)`,
+                    transition: 'width 0.9s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: isDominant
+                      ? '0 0 12px rgba(201,162,39,0.25)'
+                      : 'none',
+                  }}
                   role="progressbar"
                   aria-valuenow={pct}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={`${info.koreanName} 확률 ${pct.toFixed(1)}%`}
+                  aria-label={`${info.englishName} 확률 ${pct.toFixed(1)}%`}
                 />
               </div>
             </div>

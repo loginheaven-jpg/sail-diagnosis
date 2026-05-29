@@ -259,7 +259,7 @@ export function IntroScreen({ prefilledGroupCode }: IntroScreenProps) {
             <div className="mt-2 min-h-[18px]" style={{ fontSize: 12 }}>
               {groupPreview.state === 'idle' && (
                 <span className="text-sail-mist/70">
-                  코드를 비워두면 결과는 어느 그룹에도 귀속되지 않습니다 (개인 진단).
+                  코드를 비워두면 결과는 관리자의 일반 그룹에 자동 귀속됩니다.
                 </span>
               )}
               {groupPreview.state === 'invalid' && (

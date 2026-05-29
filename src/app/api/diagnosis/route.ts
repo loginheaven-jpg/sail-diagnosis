@@ -14,6 +14,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { getOrCreateGeneralGroup } from '@/lib/general-group';
 import { calculateRawScores, normalize } from '@/lib/scoring/calculator';
 import { calculateConsistency } from '@/lib/scoring/consistency';
 import { diagnose } from '@/lib/scoring/gaussian';
@@ -61,14 +62,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'invalid answers' }, { status: 400 });
   }
 
-  // === 그룹 코드 → group_id 변환 (선택적) ===
+  // === 그룹 코드 → group_id 변환 ===
+  //   - 사용자가 코드를 입력한 경우: 해당 그룹으로 매핑
+  //   - 코드가 비어있거나 형식이 안 맞는 경우: 관리자의 'general' 그룹으로 자동 귀속
+  //   - general 그룹이 아직 없으면 lazy create. 슈퍼어드민이 미가입 상태면 null로 진행.
   let groupId: string | null = null;
+  let usedCode = false;
   if (body.groupCode) {
     const normalized = normalizeGroupCode(body.groupCode);
     if (GROUP_CODE_REGEX.test(normalized)) {
       const serviceClient = createServiceRoleClient();
-      // supabase-js의 rpc<...> 추론이 generic Database를 통해서는
-      // 동작하지 않는 알려진 이슈가 있어 args/응답 타입을 명시한다.
       const { data: codeData, error: codeError } = (await serviceClient.rpc(
         'resolve_group_by_code' as never,
         { p_code: normalized } as never
@@ -86,8 +89,13 @@ export async function POST(request: NextRequest) {
         );
       }
       groupId = codeData as string;
+      usedCode = true;
     }
-    // 형식이 안 맞으면 코드 없이 진행 (자유 메모 사용성)
+  }
+
+  // 코드 미입력 → general 그룹 자동 매핑
+  if (!usedCode) {
+    groupId = await getOrCreateGeneralGroup();
   }
 
   // === 서버 사이드 채점 재계산 ===
