@@ -188,22 +188,24 @@ export default async function Home() {
                   color: t.color,
                 }}
               >
-                {t.code} · {t.en.toUpperCase()}
+                {t.code}
               </span>
-              <div
-                className="mt-1.5 text-sail-paper"
-                style={{ fontSize: 19, fontWeight: 700 }}
-              >
-                {t.kr}{' '}
+              <div className="mt-1.5 flex items-baseline gap-2">
                 <span
-                  className="font-serif italic"
-                  style={{ fontSize: 16, fontWeight: 500, color: t.color, opacity: 0.85 }}
+                  className="font-serif text-sail-paper"
+                  style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.005em' }}
                 >
                   {t.en}
                 </span>
+                <span
+                  className="text-sail-mist/70"
+                  style={{ fontSize: 14, fontWeight: 400 }}
+                >
+                  {t.kr}
+                </span>
               </div>
               <div
-                className="text-sail-mist/80"
+                className="mt-0.5 text-sail-mist/80"
                 style={{ fontSize: 12, letterSpacing: '0.08em' }}
               >
                 {t.combo}
