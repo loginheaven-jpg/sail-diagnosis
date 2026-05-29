@@ -42,7 +42,15 @@ export function TransitionScreen({
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="w-full max-w-xl text-center"
     >
-      <div className="rounded-question bg-sail-navy p-10 text-white shadow-card-hover md:p-12">
+      <div
+        className="rounded-modal border p-10 text-sail-paper md:p-12"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(15,36,56,0.7), rgba(10,22,40,0.85))',
+          borderColor: 'rgba(201,162,39,0.25)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        }}
+      >
         <motion.div
           initial={{ scale: 0.5, rotate: -20 }}
           animate={{ scale: 1, rotate: 0 }}
@@ -51,13 +59,35 @@ export function TransitionScreen({
         >
           {emoji}
         </motion.div>
-        <h2 className="mb-3 text-h2 font-bold">{message}</h2>
+        <h2
+          className="mb-4 font-serif text-sail-paper"
+          style={{ fontSize: 28, fontWeight: 500, letterSpacing: '-0.005em' }}
+        >
+          {message}
+        </h2>
         {subMessage && (
-          <p className="mb-8 text-body opacity-80">{subMessage}</p>
+          <p className="mb-9 text-sail-mist" style={{ fontSize: 15, lineHeight: 1.75 }}>
+            {subMessage}
+          </p>
         )}
-        <Button variant="primary" size="lg" onClick={onContinue}>
+        <button
+          type="button"
+          onClick={onContinue}
+          className="inline-flex items-center justify-center rounded-btn transition-all duration-300 hover:-translate-y-[2px]"
+          style={{
+            background:
+              'linear-gradient(135deg, var(--color-sail-gold) 0%, var(--color-sail-gold-soft) 100%)',
+            color: '#0A1628',
+            fontWeight: 700,
+            padding: '14px 32px',
+            fontSize: 15,
+            letterSpacing: '0.04em',
+            boxShadow: 'var(--shadow-gold)',
+            fontFamily: 'var(--font-korean)',
+          }}
+        >
           계속하기 ({autoCountdown})
-        </Button>
+        </button>
       </div>
     </motion.div>
   );

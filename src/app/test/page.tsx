@@ -147,11 +147,18 @@ function TestPageContent() {
 
   if (mode === 'submitting') {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+      <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
         <div className="text-center">
-          <div className="mb-4 text-5xl animate-pulse">🧭</div>
-          <p className="text-h4 font-semibold text-sail-navy">나침반을 그리는 중…</p>
-          <p className="mt-2 text-bodySm text-sail-gray-600">잠시만 기다려주세요.</p>
+          <div className="mb-5 text-5xl animate-pulse">🧭</div>
+          <p
+            className="font-serif text-sail-paper"
+            style={{ fontSize: 22, fontWeight: 500, letterSpacing: '-0.005em' }}
+          >
+            나침반을 그리는 중…
+          </p>
+          <p className="mt-3 text-sail-mist" style={{ fontSize: 14 }}>
+            잠시만 기다려주세요.
+          </p>
         </div>
       </main>
     );
@@ -159,14 +166,32 @@ function TestPageContent() {
 
   if (mode === 'submit-error') {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+      <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
         <div className="w-full max-w-md text-center">
           <div className="mb-4 text-5xl">⚠️</div>
-          <p className="mb-2 text-h4 font-semibold text-sail-gray-900">결과 저장에 실패했어요</p>
-          <p className="mb-6 text-bodySm text-sail-gray-600">{errorMsg}</p>
+          <p
+            className="mb-3 font-serif text-sail-paper"
+            style={{ fontSize: 22, fontWeight: 500 }}
+          >
+            결과 저장에 실패했어요
+          </p>
+          <p className="mb-7 text-sail-mist" style={{ fontSize: 14, lineHeight: 1.7 }}>
+            {errorMsg}
+          </p>
           <button
             onClick={() => setMode('phase')}
-            className="rounded-button bg-sail-orange px-6 py-3 text-body font-semibold text-white shadow-card hover:bg-sail-orange-hover"
+            className="inline-flex items-center justify-center rounded-btn transition-all duration-300 hover:-translate-y-[2px]"
+            style={{
+              background:
+                'linear-gradient(135deg, var(--color-sail-gold) 0%, var(--color-sail-gold-soft) 100%)',
+              color: '#0A1628',
+              fontWeight: 700,
+              padding: '14px 30px',
+              fontSize: 15,
+              letterSpacing: '0.04em',
+              boxShadow: 'var(--shadow-gold)',
+              fontFamily: 'var(--font-korean)',
+            }}
           >
             다시 시도
           </button>

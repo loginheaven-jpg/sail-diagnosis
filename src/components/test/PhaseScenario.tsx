@@ -1,11 +1,7 @@
 'use client';
 
 /**
- * PhaseScenario — Phase 1 (4지선다 시나리오)
- *
- * - 상황 텍스트 + 4개 선택지 카드
- * - 선택 시 즉시 다음 문항으로 전환 (framer-motion 페이드+슬라이드)
- * - 10문항 완료 → completePhase() 호출
+ * PhaseScenario — Phase 1 (4지선다 시나리오) v2.0 다크
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
@@ -19,6 +15,9 @@ const slideVariants = {
   animate: { opacity: 1, x: 0 },
   exit: { opacity: 0, x: -24 },
 };
+
+const CARD_BG =
+  'linear-gradient(180deg, rgba(15,36,56,0.7), rgba(10,22,40,0.7))';
 
 export function PhaseScenario() {
   const questionIndex = useTestStore((s) => s.questionIndex);
@@ -52,14 +51,35 @@ export function PhaseScenario() {
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-2xl"
       >
-        <div className="rounded-question border border-sail-gray-200 bg-white p-6 shadow-card md:p-8">
+        <div
+          className="rounded-modal border p-7 md:p-9"
+          style={{
+            background: CARD_BG,
+            borderColor: 'rgba(201,162,39,0.15)',
+          }}
+        >
           {/* 메타 */}
-          <p className="mb-2 text-caption font-medium uppercase tracking-wide text-sail-orange">
-            {q.id} · 상황 판단
+          <p
+            className="mb-3 font-serif text-sail-gold"
+            style={{
+              fontSize: 11,
+              letterSpacing: '0.3em',
+              fontWeight: 600,
+            }}
+          >
+            {q.id.toUpperCase()} · 상황 판단
           </p>
 
           {/* 상황 */}
-          <h2 className="mb-6 text-body-lg leading-relaxed font-medium text-sail-gray-900 md:text-h4">
+          <h2
+            className="mb-7 font-serif text-sail-paper"
+            style={{
+              fontSize: 'clamp(18px, 2vw, 22px)',
+              fontWeight: 500,
+              lineHeight: 1.55,
+              letterSpacing: '-0.005em',
+            }}
+          >
             {q.situation}
           </h2>
 
@@ -74,21 +94,52 @@ export function PhaseScenario() {
                   role="radio"
                   aria-checked={selected}
                   onClick={() => handleSelect(choice)}
-                  className={[
-                    'w-full rounded-card border-2 px-5 py-4 text-left transition-all',
-                    'flex items-start gap-3 text-body leading-relaxed',
-                    selected
-                      ? 'border-sail-navy bg-sail-navy-bg text-sail-gray-900 shadow-card-hover'
-                      : 'border-sail-gray-200 bg-white text-sail-gray-800 hover:border-sail-navy hover:bg-sail-navy-bg/50',
-                  ].join(' ')}
+                  className="flex w-full items-start gap-3 rounded-card border px-5 py-4 text-left transition-all"
+                  style={{
+                    background: selected
+                      ? 'rgba(201,162,39,0.08)'
+                      : 'rgba(15,36,56,0.4)',
+                    borderColor: selected
+                      ? 'rgba(224,201,119,0.55)'
+                      : 'rgba(169,187,208,0.12)',
+                    color: 'var(--color-sail-paper)',
+                    fontSize: 15.5,
+                    lineHeight: 1.6,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!selected) {
+                      e.currentTarget.style.borderColor = 'rgba(224,201,119,0.35)';
+                      e.currentTarget.style.background = 'rgba(15,36,56,0.6)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!selected) {
+                      e.currentTarget.style.borderColor = 'rgba(169,187,208,0.12)';
+                      e.currentTarget.style.background = 'rgba(15,36,56,0.4)';
+                    }
+                  }}
                 >
                   <span
-                    className={[
-                      'mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-bodySm font-bold',
-                      selected
-                        ? 'bg-sail-navy text-white'
-                        : 'bg-sail-gray-100 text-sail-gray-600',
-                    ].join(' ')}
+                    className="font-serif"
+                    style={{
+                      marginTop: 1,
+                      flexShrink: 0,
+                      width: 26,
+                      height: 26,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '999px',
+                      border: selected
+                        ? '1px solid rgba(224,201,119,0.7)'
+                        : '1px solid rgba(169,187,208,0.25)',
+                      color: selected
+                        ? 'var(--color-sail-gold-soft)'
+                        : 'var(--color-sail-mist)',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      letterSpacing: '0.05em',
+                    }}
                   >
                     {choice.key.toUpperCase()}
                   </span>

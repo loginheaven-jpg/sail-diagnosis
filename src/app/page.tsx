@@ -23,6 +23,7 @@ export const dynamic = 'force-dynamic';
 const TYPES = [
   {
     code: 'S',
+    en: 'Skipper',
     kr: '선장',
     emoji: '⚓',
     combo: 'Tell + Control',
@@ -31,6 +32,7 @@ const TYPES = [
   },
   {
     code: 'A',
+    en: 'Adventurer',
     kr: '모험가',
     emoji: '🌅',
     combo: 'Tell + Emote',
@@ -39,6 +41,7 @@ const TYPES = [
   },
   {
     code: 'I',
+    en: 'Interpreter',
     kr: '해석가',
     emoji: '🔭',
     combo: 'Ask + Control',
@@ -47,6 +50,7 @@ const TYPES = [
   },
   {
     code: 'L',
+    en: 'Lifeguard',
     kr: '수호자',
     emoji: '🛟',
     combo: 'Ask + Emote',
@@ -184,13 +188,19 @@ export default async function Home() {
                   color: t.color,
                 }}
               >
-                {t.code}
+                {t.code} · {t.en.toUpperCase()}
               </span>
               <div
                 className="mt-1.5 text-sail-paper"
                 style={{ fontSize: 19, fontWeight: 700 }}
               >
-                {t.kr}
+                {t.kr}{' '}
+                <span
+                  className="font-serif italic"
+                  style={{ fontSize: 16, fontWeight: 500, color: t.color, opacity: 0.85 }}
+                >
+                  {t.en}
+                </span>
               </div>
               <div
                 className="text-sail-mist/80"
@@ -237,7 +247,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ============ 3종 역할 진입 ============ */}
+      {/* ============ 2종 역할 진입 (관리자는 1명 — 메뉴 노출 안 함) ============ */}
       <section className="pb-[60px] md:pb-[100px]">
         <div className="mb-12 text-center">
           <div
@@ -254,14 +264,14 @@ export default async function Home() {
               letterSpacing: '-0.01em',
             }}
           >
-            세 가지 역할의 항해
+            두 가지 항해의 역할
           </h2>
           <p className="mt-4 text-sail-mist/85" style={{ fontSize: 15 }}>
-            진단을 받는 사람, 진단을 활용하는 사람, 모두를 돕는 사람
+            진단을 받는 사람과, 진단을 활용해 함께 항해하는 사람
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2">
           <RoleCard
             badge="멤버 · 고객"
             title="진단을 받는 사람"
@@ -288,19 +298,6 @@ export default async function Home() {
             ctaLabel={auth ? '코치 권한 신청' : '코치로 시작'}
             ctaHref={auth ? '/coach/apply' : '/login?redirect=/coach/apply'}
             highlight
-          />
-          <RoleCard
-            badge="관리자"
-            title="모두를 돕는 사람"
-            description="서비스 전반을 관리합니다. 코치 신청 승인, 사용자 역할 관리, 통계 조회 권한이 있습니다."
-            steps={[
-              '슈퍼어드민 1명 (사전 지정)',
-              '코치 신청 검토·승인',
-              '사용자 역할 수동 승격',
-              '전체 그룹·진단 통계 조회',
-            ]}
-            ctaLabel="관리자 로그인"
-            ctaHref="/login?redirect=/admin"
           />
         </div>
       </section>

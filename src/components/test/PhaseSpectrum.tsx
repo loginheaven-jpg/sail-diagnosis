@@ -75,13 +75,35 @@ export function PhaseSpectrum() {
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-2xl"
       >
-        <div className="rounded-question border border-sail-gray-200 bg-white p-6 shadow-card md:p-8">
+        <div
+          className="rounded-modal border p-7 md:p-9"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(15,36,56,0.7), rgba(10,22,40,0.7))',
+            borderColor: 'rgba(201,162,39,0.15)',
+          }}
+        >
           {/* 메타 */}
-          <p className="mb-2 text-caption font-medium uppercase tracking-wide text-sail-orange">
-            {q.id} · 성향 스펙트럼
+          <p
+            className="mb-3 font-serif text-sail-gold"
+            style={{
+              fontSize: 11,
+              letterSpacing: '0.3em',
+              fontWeight: 600,
+            }}
+          >
+            {q.id.toUpperCase()} · 성향 스펙트럼
           </p>
 
-          <h2 className="mb-8 text-body-lg leading-relaxed font-medium text-sail-gray-900 md:text-h4">
+          <h2
+            className="mb-9 font-serif text-sail-paper"
+            style={{
+              fontSize: 'clamp(18px, 2vw, 22px)',
+              fontWeight: 500,
+              lineHeight: 1.55,
+              letterSpacing: '-0.005em',
+            }}
+          >
             아래 두 표현 사이에서 당신의 위치를 정해주세요
           </h2>
 

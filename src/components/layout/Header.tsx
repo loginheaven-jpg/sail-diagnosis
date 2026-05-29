@@ -59,15 +59,12 @@ export async function Header() {
             코치 대시보드
           </Link>
         )}
-        {auth?.role === 'admin' && (
-          <Link
-            href="/admin"
-            className="hidden text-sail-mist transition hover:text-sail-gold-soft md:inline"
-            style={{ letterSpacing: '0.05em' }}
-          >
-            관리자
-          </Link>
-        )}
+        {/*
+          관리자 메뉴는 노출하지 않는다.
+          슈퍼어드민(loginheaven@gmail.com)은 1명뿐이고, 본인이 직접 /admin 으로
+          진입한다 (URL 직접 또는 코치 대시보드의 별도 진입). 일반 코치/멤버에게
+          "관리자"가 보이는 것은 혼란만 준다.
+        */}
 
         {auth ? (
           <UserChip auth={auth} displayName={displayName} />
@@ -115,14 +112,13 @@ function UserChip({
   };
   displayName: string | null;
 }) {
+  // admin도 외부에서는 코치로 표시 (관리자는 본인만 알아서 식별)
   const roleLabel =
-    auth.role === 'admin' ? '관리자' : auth.role === 'coach' ? '코치' : '멤버';
+    auth.role === 'admin' || auth.role === 'coach' ? '코치' : '멤버';
   const roleClass =
-    auth.role === 'admin'
-      ? 'bg-sail-gold text-sail-abyss border border-sail-gold-soft/60'
-      : auth.role === 'coach'
-        ? 'bg-sail-navy text-sail-paper border border-sail-gold-soft/40'
-        : 'bg-transparent border border-sail-mist/30 text-sail-mist';
+    auth.role === 'admin' || auth.role === 'coach'
+      ? 'bg-sail-navy text-sail-paper border border-sail-gold-soft/40'
+      : 'bg-transparent border border-sail-mist/30 text-sail-mist';
 
   return (
     <div className="flex items-center gap-3">
