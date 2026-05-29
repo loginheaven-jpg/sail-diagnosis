@@ -12,6 +12,30 @@ interface Props {
   redirectTo: string;
 }
 
+const INPUT_BASE: React.CSSProperties = {
+  background: 'rgba(10,22,40,0.55)',
+  borderColor: 'rgba(232,237,242,0.12)',
+  color: 'var(--color-sail-paper)',
+  fontFamily: 'var(--font-korean)',
+  fontSize: 15,
+  height: 48,
+};
+
+const LABEL_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-korean)',
+  fontSize: 13,
+  fontWeight: 600,
+  color: 'var(--color-sail-paper)',
+};
+
+const HINT_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-serif)',
+  fontSize: 12,
+  letterSpacing: '0.05em',
+  lineHeight: 1.6,
+  color: 'rgba(169,187,208,0.7)',
+};
+
 export function OnboardingForm({
   initialFullName,
   initialPhone,
@@ -62,15 +86,24 @@ export function OnboardingForm({
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-5">
       {error && (
-        <div className="rounded-alert border-l-4 border-sail-danger bg-red-50 px-4 py-3 text-bodySm text-red-900">
+        <div
+          className="rounded-alert border-l-2 px-5 py-3"
+          style={{
+            background: 'rgba(248,113,113,0.08)',
+            borderColor: 'var(--color-sail-danger)',
+            color: 'var(--color-sail-paper)',
+            fontSize: 13,
+            lineHeight: 1.7,
+          }}
+        >
           {error}
         </div>
       )}
 
       <div>
-        <label className="mb-1.5 block text-bodySm font-semibold text-sail-gray-800">
+        <label className="mb-2 block" style={LABEL_STYLE}>
           이름 <span className="text-sail-danger">*</span>
         </label>
         <input
@@ -81,12 +114,13 @@ export function OnboardingForm({
           autoComplete="name"
           maxLength={50}
           required
-          className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
+          className="w-full rounded-input border px-4 focus:outline-none transition-colors duration-200"
+          style={INPUT_BASE}
         />
       </div>
 
       <div>
-        <label className="mb-1.5 block text-bodySm font-semibold text-sail-gray-800">
+        <label className="mb-2 block" style={LABEL_STYLE}>
           전화번호 <span className="text-sail-danger">*</span>
         </label>
         <input
@@ -99,9 +133,10 @@ export function OnboardingForm({
           placeholder="010-1234-5678"
           autoComplete="tel"
           required
-          className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
+          className="w-full rounded-input border px-4 focus:outline-none transition-colors duration-200"
+          style={INPUT_BASE}
         />
-        <p className="mt-1 text-caption text-sail-gray-500">
+        <p className="mt-2" style={HINT_STYLE}>
           이후 전화번호로 로그인할 수 있습니다.
         </p>
       </div>

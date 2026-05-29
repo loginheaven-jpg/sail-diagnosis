@@ -1,5 +1,5 @@
 /**
- * /coach/groups/[id] — 그룹 상세 (Server Component)
+ * /coach/groups/[id] — 그룹 상세 (Server Component, Quiet Luxury v2.0)
  *
  * - 그룹 메타 + 가입 코드 + 회전/만료/보관 액션
  * - 멤버 목록
@@ -25,6 +25,27 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+const META_LABEL = {
+  fontFamily: 'var(--font-serif)',
+  fontSize: 11,
+  letterSpacing: '0.3em',
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+};
+
+const SECTION_STYLE: React.CSSProperties = {
+  background:
+    'linear-gradient(180deg, rgba(15,36,56,0.6) 0%, rgba(10,22,40,0.7) 100%)',
+  borderColor: 'rgba(169,187,208,0.12)',
+};
+
+const TYPE_HEX: Record<SailType, string> = {
+  S: '#1E3A5F',
+  A: '#F28C38',
+  I: '#9B7BC9',
+  L: '#3DB389',
+};
+
 export default async function GroupDetailPage({ params }: PageProps) {
   const { id } = await params;
   if (!UUID_REGEX.test(id)) notFound();
@@ -33,8 +54,10 @@ export default async function GroupDetailPage({ params }: PageProps) {
   if (!auth) redirect(`/login?redirect=/coach/groups/${id}`);
   if (!hasMinRole(auth.role, 'coach')) {
     return (
-      <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
-        <p className="text-center text-sail-gray-700">코치 권한이 필요합니다.</p>
+      <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
+        <p className="text-center text-sail-mist" style={{ fontSize: 15 }}>
+          코치 권한이 필요합니다.
+        </p>
       </main>
     );
   }
@@ -52,9 +75,15 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const isOwner = group.coach_id === auth.userId;
   if (!isOwner && auth.role !== 'admin') {
     return (
-      <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
-        <p className="text-center text-sail-gray-700">이 그룹에 접근할 권한이 없습니다.</p>
-        <Link href="/coach" className="mt-4 block text-center text-sail-navy underline">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
+        <p className="text-center text-sail-mist" style={{ fontSize: 15 }}>
+          이 그룹에 접근할 권한이 없습니다.
+        </p>
+        <Link
+          href="/coach"
+          className="mt-4 block text-center text-sail-gold hover:text-sail-gold-soft"
+          style={{ fontSize: 14, letterSpacing: '0.05em' }}
+        >
           ← 코치 대시보드로
         </Link>
       </main>
@@ -82,19 +111,28 @@ export default async function GroupDetailPage({ params }: PageProps) {
   }>;
   const resultList = (results ?? []) as ResultRow[];
 
-  // 4유형 분포
   const typeCounts: Record<SailType, number> = { S: 0, A: 0, I: 0, L: 0 };
   resultList.forEach((r) => {
     typeCounts[r.dominant_type as SailType]++;
   });
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-8 md:py-12">
-      <div className="flex items-center justify-between text-bodySm">
-        <Link href="/coach" className="text-sail-gray-500 transition hover:text-sail-navy">
+    <main className="mx-auto w-full max-w-5xl flex-1 space-y-7 px-4 py-8 md:py-12">
+      <div
+        className="flex items-center justify-between"
+        style={{
+          fontFamily: 'var(--font-serif)',
+          fontSize: 12,
+          letterSpacing: '0.15em',
+        }}
+      >
+        <Link
+          href="/coach"
+          className="text-sail-mist transition-colors duration-300 hover:text-sail-gold"
+        >
           ← 코치 대시보드
         </Link>
-        <span className="text-sail-gray-400">
+        <span className="text-sail-mist/60" style={{ letterSpacing: '0.18em' }}>
           {new Date(group.created_at).toLocaleDateString('ko-KR', {
             year: 'numeric',
             month: 'long',
@@ -104,80 +142,147 @@ export default async function GroupDetailPage({ params }: PageProps) {
         </span>
       </div>
 
-      {/* 그룹 헤더 + 액션 */}
       <GroupDetailClient
         group={group}
         memberCount={memberList.length}
         resultCount={resultList.length}
       />
 
-      {/* 멤버 초대 (코드 + 직링크 + 초대 메시지 + QR) */}
       <InvitationBlock group={group} />
 
-      {/* 4유형 분포 */}
       {resultList.length > 0 && (
-        <section className="rounded-card border border-sail-gray-200 bg-white p-card shadow-card">
-          <h2 className="mb-1 text-h3 font-bold text-sail-navy">4유형 분포</h2>
-          <p className="mb-5 text-bodySm text-sail-gray-600">
+        <section className="rounded-modal border p-7 md:p-9" style={SECTION_STYLE}>
+          <p className="text-sail-gold" style={META_LABEL}>
+            Type Distribution
+          </p>
+          <h2
+            className="mt-2 font-serif text-sail-paper"
+            style={{
+              fontSize: 'clamp(20px, 2.4vw, 24px)',
+              fontWeight: 500,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            4유형 분포
+          </h2>
+          <p
+            className="mt-2 text-sail-mist"
+            style={{ fontSize: 14, lineHeight: 1.7 }}
+          >
             그룹 멤버 {resultList.length}명의 주 유형 분포
           </p>
-          <TypeDistribution counts={typeCounts} total={resultList.length} />
+          <div className="mt-6">
+            <TypeDistribution counts={typeCounts} total={resultList.length} />
+          </div>
         </section>
       )}
 
       {/* 결과 목록 */}
-      <section className="rounded-card border border-sail-gray-200 bg-white p-card shadow-card">
-        <h2 className="mb-1 text-h3 font-bold text-sail-navy">진단 결과</h2>
-        <p className="mb-5 text-bodySm text-sail-gray-600">
+      <section className="rounded-modal border p-7 md:p-9" style={SECTION_STYLE}>
+        <p className="text-sail-gold" style={META_LABEL}>
+          Results
+        </p>
+        <h2
+          className="mt-2 font-serif text-sail-paper"
+          style={{
+            fontSize: 'clamp(20px, 2.4vw, 24px)',
+            fontWeight: 500,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          진단 결과
+        </h2>
+        <p
+          className="mt-2 text-sail-mist"
+          style={{ fontSize: 14, lineHeight: 1.7 }}
+        >
           최신 {Math.min(resultList.length, 100)}건 — 클릭하면 결과 페이지로 이동
         </p>
+
         {resultList.length === 0 ? (
-          <p className="rounded-card bg-sail-gray-50 px-4 py-6 text-center text-bodySm text-sail-gray-500">
+          <p
+            className="mt-6 rounded-card border px-4 py-6 text-center text-sail-mist"
+            style={{
+              background: 'rgba(10,22,40,0.45)',
+              borderColor: 'rgba(232,237,242,0.08)',
+              fontSize: 14,
+            }}
+          >
             아직 이 그룹에 들어온 진단 결과가 없습니다. 멤버에게 코드를 공유하세요.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-bodySm">
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full" style={{ fontSize: 14 }}>
               <thead>
-                <tr className="border-b border-sail-gray-200 text-left text-caption text-sail-gray-500">
-                  <th className="pb-2 font-semibold">닉네임</th>
-                  <th className="pb-2 font-semibold">주 유형</th>
-                  <th className="pb-2 font-semibold">비율</th>
-                  <th className="pb-2 font-semibold">일관성</th>
-                  <th className="pb-2 font-semibold">진단일</th>
-                  <th className="pb-2 font-semibold">결과</th>
+                <tr
+                  className="text-left text-sail-mist"
+                  style={{
+                    borderBottom: '1px solid rgba(232,237,242,0.1)',
+                    ...META_LABEL,
+                    fontSize: 10,
+                  }}
+                >
+                  <th className="pb-3 font-semibold">닉네임</th>
+                  <th className="pb-3 font-semibold">주 유형</th>
+                  <th className="pb-3 font-semibold">비율</th>
+                  <th className="pb-3 font-semibold">일관성</th>
+                  <th className="pb-3 font-semibold">진단일</th>
+                  <th className="pb-3 font-semibold">결과</th>
                 </tr>
               </thead>
               <tbody>
                 {resultList.slice(0, 100).map((r) => (
                   <tr
                     key={r.id}
-                    className="border-b border-sail-gray-100 hover:bg-sail-gray-50"
+                    style={{
+                      borderBottom: '1px solid rgba(232,237,242,0.05)',
+                    }}
                   >
-                    <td className="py-2.5 text-sail-gray-900">{r.nickname ?? '익명'}</td>
-                    <td className="py-2.5">
+                    <td className="py-3 text-sail-paper">{r.nickname ?? '익명'}</td>
+                    <td className="py-3">
                       <TypeBadge type={r.dominant_type as SailType} />
                     </td>
-                    <td className="py-2.5 font-mono text-sail-gray-600">
-                      {Number(r[`type_${r.dominant_type.toLowerCase()}_pct` as 'type_s_pct']).toFixed(1)}%
+                    <td
+                      className="py-3 text-sail-mist"
+                      style={{
+                        fontFamily: 'var(--font-serif)',
+                        letterSpacing: '0.03em',
+                      }}
+                    >
+                      {Number(
+                        r[`type_${r.dominant_type.toLowerCase()}_pct` as 'type_s_pct']
+                      ).toFixed(1)}
+                      %
                     </td>
-                    <td className="py-2.5 font-mono text-sail-gray-600">
+                    <td
+                      className="py-3 text-sail-mist"
+                      style={{
+                        fontFamily: 'var(--font-serif)',
+                        letterSpacing: '0.03em',
+                      }}
+                    >
                       {r.consistency_score === null
                         ? '—'
                         : `${Number(r.consistency_score).toFixed(0)}%`}
                     </td>
-                    <td className="py-2.5 text-caption text-sail-gray-500">
+                    <td className="py-3 text-sail-mist/70" style={{ fontSize: 12 }}>
                       {new Date(r.created_at).toLocaleDateString('ko-KR', {
                         month: 'short',
                         day: 'numeric',
                       })}
                     </td>
-                    <td className="py-2.5">
+                    <td className="py-3">
                       <Link
                         href={`/result/${r.id}`}
-                        className="text-caption font-semibold text-sail-navy hover:underline"
+                        className="text-sail-gold transition-colors duration-200 hover:text-sail-gold-soft"
+                        style={{
+                          fontFamily: 'var(--font-serif)',
+                          fontSize: 12,
+                          letterSpacing: '0.1em',
+                          fontWeight: 600,
+                        }}
                       >
-                        보기 →
+                        VIEW →
                       </Link>
                     </td>
                   </tr>
@@ -189,26 +294,59 @@ export default async function GroupDetailPage({ params }: PageProps) {
       </section>
 
       {/* 멤버 목록 */}
-      <section className="rounded-card border border-sail-gray-200 bg-white p-card shadow-card">
-        <h2 className="mb-1 text-h3 font-bold text-sail-navy">멤버</h2>
-        <p className="mb-5 text-bodySm text-sail-gray-600">
+      <section className="rounded-modal border p-7 md:p-9" style={SECTION_STYLE}>
+        <p className="text-sail-gold" style={META_LABEL}>
+          Members
+        </p>
+        <h2
+          className="mt-2 font-serif text-sail-paper"
+          style={{
+            fontSize: 'clamp(20px, 2.4vw, 24px)',
+            fontWeight: 500,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          멤버
+        </h2>
+        <p
+          className="mt-2 text-sail-mist"
+          style={{ fontSize: 14, lineHeight: 1.7 }}
+        >
           {memberList.length}명 / 정원 {group.max_members}명
         </p>
         {memberList.length === 0 ? (
-          <p className="rounded-card bg-sail-gray-50 px-4 py-6 text-center text-bodySm text-sail-gray-500">
+          <p
+            className="mt-6 rounded-card border px-4 py-6 text-center text-sail-mist"
+            style={{
+              background: 'rgba(10,22,40,0.45)',
+              borderColor: 'rgba(232,237,242,0.08)',
+              fontSize: 14,
+            }}
+          >
             로그인된 멤버는 아직 없습니다. (비로그인 진단도 결과 표에 표시됩니다)
           </p>
         ) : (
-          <ul className="divide-y divide-sail-gray-100">
+          <ul
+            className="mt-5 divide-y"
+            style={{ borderColor: 'rgba(232,237,242,0.08)' } as React.CSSProperties}
+          >
             {memberList.map((m) => (
               <li
                 key={m.user_id}
-                className="flex items-center justify-between py-2.5 text-bodySm"
+                className="flex items-center justify-between py-3"
+                style={{ fontSize: 14 }}
               >
-                <span className="text-sail-gray-900">
+                <span className="text-sail-paper">
                   {m.users?.nickname ?? m.users?.email?.split('@')[0] ?? '익명'}
                 </span>
-                <span className="text-caption text-sail-gray-500">
+                <span
+                  className="text-sail-mist/70"
+                  style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: 12,
+                    letterSpacing: '0.08em',
+                  }}
+                >
                   {new Date(m.joined_at).toLocaleDateString('ko-KR', {
                     month: 'short',
                     day: 'numeric',
@@ -226,13 +364,24 @@ export default async function GroupDetailPage({ params }: PageProps) {
 
 function TypeBadge({ type }: { type: SailType }) {
   const info = SAIL_TYPES[type];
-  const bg = `bg-sail-${type.toLowerCase()}`;
+  const accent = TYPE_HEX[type];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-pill px-2.5 py-0.5 text-tiny font-semibold text-white ${bg}`}
+      className="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-0.5"
+      style={{
+        background: `${accent}1F`,
+        border: `1px solid ${accent}55`,
+        color: type === 'S' ? 'var(--color-sail-paper)' : accent,
+        fontFamily: 'var(--font-serif)',
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: '0.08em',
+      }}
     >
-      <span aria-hidden>{info.emoji}</span>
-      {info.koreanName}
+      <span aria-hidden style={{ fontSize: 12 }}>
+        {info.emoji}
+      </span>
+      {type}
     </span>
   );
 }

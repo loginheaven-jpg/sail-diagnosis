@@ -1,8 +1,5 @@
 /**
- * /onboarding — OAuth 가입자 프로필 보완 (Server Component)
- *
- * OAuth로 가입한 사용자의 phone 또는 full_name이 비어있으면
- * proxy.ts가 이 페이지로 강제 이동시킨다.
+ * /onboarding — OAuth 가입자 프로필 보완 (Quiet Luxury v2.0)
  */
 
 import { redirect } from 'next/navigation';
@@ -17,6 +14,14 @@ export const dynamic = 'force-dynamic';
 interface PageProps {
   searchParams: Promise<{ redirect?: string }>;
 }
+
+const META_LABEL = {
+  fontFamily: 'var(--font-serif)',
+  fontSize: 11,
+  letterSpacing: '0.3em',
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+};
 
 export default async function OnboardingPage({ searchParams }: PageProps) {
   const auth = await getAuthContext();
@@ -33,7 +38,6 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
   const { redirect: redirectTo } = await searchParams;
   const next = redirectTo && redirectTo.startsWith('/') ? redirectTo : '/';
 
-  // 이미 채워져 있으면 즉시 redirect
   if (user.full_name && user.phone) {
     redirect(next);
   }
@@ -42,13 +46,34 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-sail-orange text-3xl text-white shadow-card">
+          <div
+            className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl text-3xl"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.06) 100%)',
+              border: '1px solid rgba(201,162,39,0.35)',
+              boxShadow: '0 0 24px rgba(201,162,39,0.3)',
+            }}
+          >
             👋
           </div>
-          <h1 className="text-h2 font-bold text-sail-gray-900">
-            반갑습니다!
+          <p className="text-sail-gold" style={META_LABEL}>
+            Welcome Aboard
+          </p>
+          <h1
+            className="mt-2 font-serif text-sail-paper"
+            style={{
+              fontSize: 'clamp(28px, 4vw, 36px)',
+              fontWeight: 500,
+              letterSpacing: '-0.015em',
+            }}
+          >
+            반갑습니다
           </h1>
-          <p className="mt-1 text-bodySm text-sail-gray-500">
+          <p
+            className="mt-3 text-sail-mist"
+            style={{ fontSize: 14, lineHeight: 1.75 }}
+          >
             진단 결과를 개인별로 안내해드리기 위해
             <br />
             몇 가지 정보만 확인하겠습니다

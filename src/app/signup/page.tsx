@@ -1,11 +1,7 @@
 'use client';
 
 /**
- * /signup — 신규 가입 (이름 + 전화번호 + 이메일 + 암호)
- *
- * Supabase Auth (email+password)로 가입한 뒤, public.users의 phone/full_name을
- * /api/users/me PATCH로 채운다. 트리거가 ON CONFLICT DO UPDATE로 처리하므로
- * 순서는 가입 → 트리거 → API PATCH.
+ * /signup — 신규 가입 (이름 + 전화번호 + 이메일 + 암호) (Quiet Luxury v2.0)
  */
 
 import Link from 'next/link';
@@ -15,6 +11,38 @@ import { Suspense, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { formatPhone, isValidPhone, normalizePhone } from '@/lib/phone';
 import { createClient } from '@/lib/supabase/client';
+
+const META_LABEL = {
+  fontFamily: 'var(--font-serif)',
+  fontSize: 11,
+  letterSpacing: '0.3em',
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+};
+
+const INPUT_BASE: React.CSSProperties = {
+  background: 'rgba(10,22,40,0.55)',
+  borderColor: 'rgba(232,237,242,0.12)',
+  color: 'var(--color-sail-paper)',
+  fontFamily: 'var(--font-korean)',
+  fontSize: 15,
+  height: 48,
+};
+
+const LABEL_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-korean)',
+  fontSize: 13,
+  fontWeight: 600,
+  color: 'var(--color-sail-paper)',
+};
+
+const HINT_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-serif)',
+  fontSize: 12,
+  letterSpacing: '0.05em',
+  lineHeight: 1.6,
+  color: 'rgba(169,187,208,0.7)',
+};
 
 export default function SignupPage() {
   return (
@@ -27,7 +55,7 @@ export default function SignupPage() {
 function LoadingFallback() {
   return (
     <main className="flex flex-1 items-center justify-center px-6 py-12">
-      <p className="text-sail-gray-500">가입 화면을 불러오는 중…</p>
+      <p className="text-sail-mist">가입 화면을 불러오는 중…</p>
     </main>
   );
 }
@@ -85,7 +113,6 @@ function SignupPageContent() {
 
     setBusy(true);
 
-    // 0) phone 중복 사전 체크 (DB에 unique 제약 있어 어차피 막히지만 UX 위해)
     try {
       const lookup = await fetch('/api/auth/phone-lookup', {
         method: 'POST',
@@ -94,9 +121,7 @@ function SignupPageContent() {
       });
       const j = (await lookup.json()) as { exists?: boolean };
       if (j.exists) {
-        setError(
-          '이미 가입된 전화번호입니다. 로그인 화면에서 시도해주세요.'
-        );
+        setError('이미 가입된 전화번호입니다. 로그인 화면에서 시도해주세요.');
         setBusy(false);
         return;
       }
@@ -104,7 +129,6 @@ function SignupPageContent() {
       /* lookup 실패는 무시하고 가입 시도 */
     }
 
-    // 1) Supabase Auth 가입 (email+password)
     const callbackUrl =
       typeof window !== 'undefined'
         ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`
@@ -123,10 +147,7 @@ function SignupPageContent() {
       return;
     }
 
-    // 2) 트리거가 public.users 행 생성 + raw_user_meta_data에서 phone/full_name도 흡수.
-    //    그래도 안전을 위해 클라이언트에서 PATCH로 한 번 더 동기화.
     if (signUpData.session) {
-      // 세션이 즉시 발급된 경우 (email confirmation 비활성 시): PATCH 가능
       try {
         await fetch('/api/users/me', {
           method: 'PATCH',
@@ -137,7 +158,6 @@ function SignupPageContent() {
         /* ignore */
       }
 
-      // 2b) 코치로 신청 옵션 — coach_applications에 신청 INSERT
       if (applyAsCoach) {
         try {
           await fetch('/api/coach-applications', {
@@ -148,9 +168,8 @@ function SignupPageContent() {
             }),
           });
         } catch {
-          /* ignore — 가입은 성공했으므로 신청 실패는 별도 안내 */
+          /* ignore */
         }
-        // 코치 신청자는 신청 안내 페이지로
         router.replace('/coach/apply');
         router.refresh();
         return;
@@ -161,7 +180,6 @@ function SignupPageContent() {
       return;
     }
 
-    // 세션이 없는 경우 — 이메일 확인 메일이 보내진 상태
     setError(null);
     router.replace(
       `/signup/confirm?email=${encodeURIComponent(em)}&redirect=${encodeURIComponent(redirect)}`
@@ -172,24 +190,56 @@ function SignupPageContent() {
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-sail-orange text-3xl text-white shadow-card">
+          <div
+            className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl text-3xl"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.06) 100%)',
+              border: '1px solid rgba(201,162,39,0.35)',
+              boxShadow: '0 0 24px rgba(201,162,39,0.3)',
+            }}
+          >
             ⛵
           </div>
-          <h1 className="text-h2 font-bold text-sail-gray-900">가입하기</h1>
-          <p className="mt-1 text-bodySm text-sail-gray-500">
+          <p className="text-sail-gold" style={META_LABEL}>
+            Sign Up
+          </p>
+          <h1
+            className="mt-2 font-serif text-sail-paper"
+            style={{
+              fontSize: 'clamp(28px, 4vw, 36px)',
+              fontWeight: 500,
+              letterSpacing: '-0.015em',
+            }}
+          >
+            가입하기
+          </h1>
+          <p
+            className="mt-3 text-sail-mist"
+            style={{ fontSize: 14, lineHeight: 1.7 }}
+          >
             이름·전화번호·이메일·암호를 입력하면 끝입니다
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 rounded-alert border-l-4 border-sail-danger bg-red-50 px-4 py-3 text-bodySm text-red-900">
+          <div
+            className="mb-5 rounded-alert border-l-2 px-5 py-3"
+            style={{
+              background: 'rgba(248,113,113,0.08)',
+              borderColor: 'var(--color-sail-danger)',
+              color: 'var(--color-sail-paper)',
+              fontSize: 13,
+              lineHeight: 1.7,
+            }}
+          >
             {error}
           </div>
         )}
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-5">
           <div>
-            <label className="mb-1.5 block text-bodySm font-semibold text-sail-gray-800">
+            <label className="mb-2 block" style={LABEL_STYLE}>
               이름 <span className="text-sail-danger">*</span>
             </label>
             <input
@@ -200,12 +250,13 @@ function SignupPageContent() {
               autoComplete="name"
               maxLength={50}
               required
-              className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
+              className="w-full rounded-input border px-4 focus:outline-none transition-colors duration-200"
+              style={INPUT_BASE}
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-bodySm font-semibold text-sail-gray-800">
+            <label className="mb-2 block" style={LABEL_STYLE}>
               전화번호 <span className="text-sail-danger">*</span>
             </label>
             <input
@@ -218,15 +269,16 @@ function SignupPageContent() {
               placeholder="010-1234-5678"
               autoComplete="tel"
               required
-              className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
+              className="w-full rounded-input border px-4 focus:outline-none transition-colors duration-200"
+              style={INPUT_BASE}
             />
-            <p className="mt-1 text-caption text-sail-gray-500">
+            <p className="mt-2" style={HINT_STYLE}>
               로그인 ID로 사용됩니다. 다른 사람과 중복될 수 없습니다.
             </p>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-bodySm font-semibold text-sail-gray-800">
+            <label className="mb-2 block" style={LABEL_STYLE}>
               이메일 <span className="text-sail-danger">*</span>
             </label>
             <input
@@ -236,16 +288,17 @@ function SignupPageContent() {
               placeholder="you@example.com"
               autoComplete="email"
               required
-              className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
+              className="w-full rounded-input border px-4 focus:outline-none transition-colors duration-200"
+              style={INPUT_BASE}
             />
-            <p className="mt-1 text-caption text-sail-gray-500">
+            <p className="mt-2" style={HINT_STYLE}>
               암호 재설정·공지 수신용입니다.
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-bodySm font-semibold text-sail-gray-800">
+              <label className="mb-2 block" style={LABEL_STYLE}>
                 암호 <span className="text-sail-danger">*</span>
               </label>
               <input
@@ -256,11 +309,12 @@ function SignupPageContent() {
                 autoComplete="new-password"
                 minLength={8}
                 required
-                className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
+                className="w-full rounded-input border px-4 focus:outline-none transition-colors duration-200"
+                style={INPUT_BASE}
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-bodySm font-semibold text-sail-gray-800">
+              <label className="mb-2 block" style={LABEL_STYLE}>
                 암호 확인 <span className="text-sail-danger">*</span>
               </label>
               <input
@@ -271,34 +325,62 @@ function SignupPageContent() {
                 autoComplete="new-password"
                 minLength={8}
                 required
-                className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
+                className="w-full rounded-input border px-4 focus:outline-none transition-colors duration-200"
+                style={INPUT_BASE}
               />
             </div>
           </div>
 
           {/* 코치 신청 옵션 */}
-          <div className="rounded-card border border-sail-gray-200 bg-sail-gray-50 p-4">
-            <label className="flex items-start gap-2 text-bodySm text-sail-gray-800">
+          <div
+            className="rounded-card border p-5"
+            style={{
+              background: 'rgba(10,22,40,0.5)',
+              borderColor: 'rgba(201,162,39,0.2)',
+            }}
+          >
+            <label className="flex cursor-pointer items-start gap-3 text-sail-paper">
               <input
                 type="checkbox"
                 checked={applyAsCoach}
                 onChange={(e) => setApplyAsCoach(e.currentTarget.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-sail-gray-300 text-sail-navy focus:ring-sail-navy"
+                className="mt-1 h-4 w-4 accent-sail-gold"
               />
               <span>
-                <strong>코치로 가입 신청</strong>
-                <span className="ml-1.5 rounded-pill bg-sail-navy px-2 py-0.5 text-tiny font-semibold text-white">
-                  심사 필요
+                <strong style={{ fontFamily: 'var(--font-korean)', fontSize: 14 }}>
+                  코치로 가입 신청
+                </strong>
+                <span
+                  className="ml-2 rounded-pill"
+                  style={{
+                    background: 'rgba(232,168,56,0.14)',
+                    border: '1px solid rgba(232,168,56,0.4)',
+                    color: 'var(--color-sail-warning)',
+                    ...META_LABEL,
+                    fontSize: 9,
+                    padding: '3px 9px',
+                  }}
+                >
+                  Review
                 </span>
-                <span className="mt-1 block text-caption font-normal text-sail-gray-600">
-                  팀·조직·교회에서 그룹을 만들고 멤버들의 진단 결과를 관리하는 코치 권한을 신청합니다.
-                  관리자가 검토 후 승인합니다.
+                <span
+                  className="mt-2 block text-sail-mist"
+                  style={{ fontSize: 13, lineHeight: 1.65 }}
+                >
+                  팀·조직·교회에서 그룹을 만들고 멤버들의 진단 결과를 관리하는 코치 권한을 신청합니다. 관리자가 검토 후 승인합니다.
                 </span>
               </span>
             </label>
             {applyAsCoach && (
-              <div className="mt-3 ml-6">
-                <label className="mb-1 block text-caption font-semibold text-sail-gray-700">
+              <div className="mt-4 ml-7">
+                <label
+                  className="mb-2 block text-sail-paper"
+                  style={{
+                    fontFamily: 'var(--font-korean)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
                   신청 사유 (선택, 최대 500자)
                 </label>
                 <textarea
@@ -307,22 +389,25 @@ function SignupPageContent() {
                   maxLength={500}
                   rows={3}
                   placeholder="어떤 목적으로 코치 권한이 필요한지 짧게 적어주시면 검토가 빨라집니다."
-                  className="w-full rounded-input border border-sail-gray-300 bg-white px-3 py-2 text-bodySm focus:border-sail-navy focus:shadow-focus focus:outline-none"
+                  className="w-full rounded-input border px-3.5 py-2.5 focus:outline-none transition-colors duration-200"
+                  style={{ ...INPUT_BASE, height: 'auto', fontSize: 13 }}
                 />
               </div>
             )}
           </div>
 
-          <label className="flex items-start gap-2 text-bodySm text-sail-gray-700">
+          <label
+            className="flex cursor-pointer items-start gap-3 text-sail-mist"
+            style={{ fontSize: 13, lineHeight: 1.7 }}
+          >
             <input
               type="checkbox"
               checked={agreed}
               onChange={(e) => setAgreed(e.currentTarget.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-sail-gray-300 text-sail-navy focus:ring-sail-navy"
+              className="mt-1 h-4 w-4 accent-sail-gold"
             />
             <span>
-              개인 식별 가능 정보(이름·전화번호·이메일)는 진단 결과 제공과 통계
-              목적으로만 사용됩니다. 이에 동의합니다.
+              개인 식별 가능 정보(이름·전화번호·이메일)는 진단 결과 제공과 통계 목적으로만 사용됩니다. 이에 동의합니다.
             </span>
           </label>
 
@@ -331,9 +416,16 @@ function SignupPageContent() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-caption text-sail-gray-500">
+        <p
+          className="mt-7 text-center text-sail-mist"
+          style={{ fontSize: 13, lineHeight: 1.7 }}
+        >
           이미 가입하셨나요?{' '}
-          <Link href="/login" className="font-semibold text-sail-navy hover:underline">
+          <Link
+            href="/login"
+            className="text-sail-gold transition-colors duration-200 hover:text-sail-gold-soft"
+            style={{ fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3 }}
+          >
             로그인 →
           </Link>
         </p>

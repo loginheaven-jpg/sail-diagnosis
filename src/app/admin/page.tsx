@@ -1,5 +1,5 @@
 /**
- * /admin — 슈퍼어드민 대시보드 (Server Component)
+ * /admin — 슈퍼어드민 대시보드 (Server Component, Quiet Luxury v2.0)
  *
  * - 전체 통계 (사용자/그룹/결과 수)
  * - 코치 신청 대기 목록 (승인·거부)
@@ -23,6 +23,14 @@ interface PendingApplication extends CoachApplicationRow {
   user: Pick<UserRow, 'full_name' | 'nickname' | 'email' | 'phone'> | null;
 }
 
+const META_LABEL = {
+  fontFamily: 'var(--font-serif)',
+  fontSize: 11,
+  letterSpacing: '0.3em',
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+};
+
 export default async function AdminPage() {
   const auth = await getAuthContext();
   if (!auth) redirect('/login?redirect=/admin');
@@ -30,7 +38,6 @@ export default async function AdminPage() {
 
   const svc = createServiceRoleClient();
 
-  // 통계 + 내 그룹 (어드민도 자기 그룹 가질 수 있음)
   const [usersCount, groupsCount, resultsCount, pendingApps, recentUsers, myGroups] =
     await Promise.all([
       svc.from('users').select('id', { count: 'exact', head: true }),
@@ -61,12 +68,22 @@ export default async function AdminPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-8 md:py-12">
+    <main className="mx-auto w-full max-w-5xl flex-1 space-y-7 px-4 py-8 md:py-12">
       <div>
-        <p className="text-caption font-medium uppercase tracking-wide text-sail-orange">
-          관리자
+        <p className="text-sail-gold" style={META_LABEL}>
+          Admin
         </p>
-        <h1 className="text-h1 font-bold text-sail-gray-900">관리자 대시보드</h1>
+        <h1
+          className="mt-2 font-serif text-sail-paper"
+          style={{
+            fontSize: 'clamp(28px, 4vw, 36px)',
+            fontWeight: 500,
+            letterSpacing: '-0.015em',
+            lineHeight: 1.2,
+          }}
+        >
+          관리자 대시보드
+        </h1>
       </div>
 
       {/* 통계 카드 */}
@@ -77,23 +94,59 @@ export default async function AdminPage() {
       </section>
 
       {/* 관리자도 그룹을 만들 수 있다는 안내 + 진입로 */}
-      <section className="rounded-card border border-sail-navy/30 bg-sail-navy-bg p-card">
-        <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-sail-navy text-xl text-white">
+      <section
+        className="rounded-modal border p-7"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(15,36,56,0.6) 0%, rgba(10,22,40,0.7) 100%)',
+          borderColor: 'rgba(201,162,39,0.18)',
+        }}
+      >
+        <div className="flex flex-wrap items-start gap-5">
+          <div
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl"
+            style={{
+              background: 'rgba(201,162,39,0.12)',
+              border: '1px solid rgba(201,162,39,0.3)',
+              fontSize: 18,
+              boxShadow: '0 0 16px rgba(201,162,39,0.25)',
+            }}
+          >
             ⛵
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-h4 font-bold text-sail-gray-900">
+            <p className="text-sail-gold" style={{ ...META_LABEL, fontSize: 10 }}>
+              Coach Mode
+            </p>
+            <h2
+              className="mt-1 font-serif text-sail-paper"
+              style={{ fontSize: 18, fontWeight: 500, letterSpacing: '-0.005em' }}
+            >
               관리자도 그룹을 만들 수 있습니다
             </h2>
-            <p className="mt-1 text-bodySm text-sail-gray-700">
-              내가 운영하는 그룹: <strong>{myGroups.count ?? 0}개</strong>{' '}
+            <p
+              className="mt-2 text-sail-mist"
+              style={{ fontSize: 14, lineHeight: 1.7 }}
+            >
+              내가 운영하는 그룹{' '}
+              <strong className="text-sail-paper">{myGroups.count ?? 0}개</strong>{' '}
               · 코치 대시보드에서 그룹을 만들고 5자리 코드를 발급하세요.
             </p>
           </div>
           <Link
             href="/coach"
-            className="inline-flex h-10 flex-shrink-0 items-center rounded-button bg-sail-navy px-4 text-bodySm font-semibold text-white hover:bg-sail-navy-light"
+            className="inline-flex flex-shrink-0 items-center rounded-btn transition-all duration-300 hover:-translate-y-[1px]"
+            style={{
+              background:
+                'linear-gradient(135deg, var(--color-sail-gold) 0%, var(--color-sail-gold-soft) 100%)',
+              color: '#0A1628',
+              fontWeight: 700,
+              padding: '11px 22px',
+              fontSize: 13,
+              letterSpacing: '0.05em',
+              boxShadow: 'var(--shadow-gold)',
+              fontFamily: 'var(--font-korean)',
+            }}
           >
             코치 대시보드 →
           </Link>
@@ -110,9 +163,26 @@ export default async function AdminPage() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-card border border-sail-gray-200 bg-white p-card shadow-card">
-      <p className="text-bodySm font-medium text-sail-gray-600">{label}</p>
-      <p className="mt-1 font-mono text-display font-bold text-sail-navy">
+    <div
+      className="rounded-modal border p-7"
+      style={{
+        background:
+          'linear-gradient(180deg, rgba(15,36,56,0.6) 0%, rgba(10,22,40,0.7) 100%)',
+        borderColor: 'rgba(169,187,208,0.12)',
+      }}
+    >
+      <p className="text-sail-mist" style={{ ...META_LABEL, fontSize: 10 }}>
+        {label}
+      </p>
+      <p
+        className="mt-3 font-serif text-sail-paper"
+        style={{
+          fontSize: 'clamp(36px, 5vw, 48px)',
+          fontWeight: 500,
+          letterSpacing: '-0.01em',
+          lineHeight: 1,
+        }}
+      >
         {value.toLocaleString('ko-KR')}
       </p>
     </div>

@@ -1,11 +1,7 @@
 'use client';
 
 /**
- * /reset-password/confirm — 메일 링크에서 도착. 새 암호 입력.
- *
- * Supabase가 URL hash에 access_token, refresh_token, type=recovery 등을
- * 박아서 보낸다. 사이트가 로드되면 자동으로 세션이 설정되고,
- * supabase.auth.updateUser({ password }) 호출 시 비밀번호 변경됨.
+ * /reset-password/confirm — 메일 링크에서 도착. 새 암호 입력 (Quiet Luxury v2.0)
  */
 
 import Link from 'next/link';
@@ -14,6 +10,30 @@ import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
+
+const META_LABEL = {
+  fontFamily: 'var(--font-serif)',
+  fontSize: 11,
+  letterSpacing: '0.3em',
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+};
+
+const INPUT_BASE: React.CSSProperties = {
+  background: 'rgba(10,22,40,0.55)',
+  borderColor: 'rgba(232,237,242,0.12)',
+  color: 'var(--color-sail-paper)',
+  fontFamily: 'var(--font-korean)',
+  fontSize: 15,
+  height: 48,
+};
+
+const LABEL_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-korean)',
+  fontSize: 13,
+  fontWeight: 600,
+  color: 'var(--color-sail-paper)',
+};
 
 export default function ResetPasswordConfirmPage() {
   const router = useRouter();
@@ -25,7 +45,6 @@ export default function ResetPasswordConfirmPage() {
 
   const supabase = createClient();
 
-  // 세션이 들어왔는지 확인
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -68,22 +87,55 @@ export default function ResetPasswordConfirmPage() {
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-sail-orange text-3xl text-white shadow-card">
+          <div
+            className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl text-3xl"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.06) 100%)',
+              border: '1px solid rgba(201,162,39,0.35)',
+              boxShadow: '0 0 24px rgba(201,162,39,0.3)',
+            }}
+          >
             🔑
           </div>
-          <h1 className="text-h2 font-bold text-sail-gray-900">새 암호 설정</h1>
-          <p className="mt-1 text-bodySm text-sail-gray-500">
+          <p className="text-sail-gold" style={META_LABEL}>
+            New Password
+          </p>
+          <h1
+            className="mt-2 font-serif text-sail-paper"
+            style={{
+              fontSize: 'clamp(26px, 3.4vw, 32px)',
+              fontWeight: 500,
+              letterSpacing: '-0.015em',
+            }}
+          >
+            새 암호 설정
+          </h1>
+          <p
+            className="mt-3 text-sail-mist"
+            style={{ fontSize: 14, lineHeight: 1.7 }}
+          >
             새로 사용할 암호를 입력해주세요
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 rounded-alert border-l-4 border-sail-danger bg-red-50 px-4 py-3 text-bodySm text-red-900">
+          <div
+            className="mb-5 rounded-alert border-l-2 px-5 py-3"
+            style={{
+              background: 'rgba(248,113,113,0.08)',
+              borderColor: 'var(--color-sail-danger)',
+              color: 'var(--color-sail-paper)',
+              fontSize: 13,
+              lineHeight: 1.7,
+            }}
+          >
             {error}
             <div className="mt-2">
               <Link
                 href="/reset-password"
-                className="font-semibold underline"
+                className="text-sail-gold"
+                style={{ fontWeight: 600, textDecoration: 'underline' }}
               >
                 재설정 다시 요청 →
               </Link>
@@ -94,7 +146,7 @@ export default function ResetPasswordConfirmPage() {
         {ready && !error && (
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-bodySm font-semibold text-sail-gray-800">
+              <label className="mb-2 block" style={LABEL_STYLE}>
                 새 암호
               </label>
               <input
@@ -105,11 +157,12 @@ export default function ResetPasswordConfirmPage() {
                 autoComplete="new-password"
                 minLength={8}
                 required
-                className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
+                className="w-full rounded-input border px-4 focus:outline-none transition-colors duration-200"
+                style={INPUT_BASE}
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-bodySm font-semibold text-sail-gray-800">
+              <label className="mb-2 block" style={LABEL_STYLE}>
                 새 암호 확인
               </label>
               <input
@@ -120,7 +173,8 @@ export default function ResetPasswordConfirmPage() {
                 autoComplete="new-password"
                 minLength={8}
                 required
-                className="h-11 w-full rounded-input border border-sail-gray-300 px-3.5 text-body focus:border-sail-navy focus:shadow-focus focus:outline-none"
+                className="w-full rounded-input border px-4 focus:outline-none transition-colors duration-200"
+                style={INPUT_BASE}
               />
             </div>
             <Button type="submit" size="lg" fullWidth disabled={busy}>

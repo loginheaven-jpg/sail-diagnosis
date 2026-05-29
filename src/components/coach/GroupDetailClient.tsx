@@ -1,7 +1,8 @@
 'use client';
 
 /**
- * GroupDetailClient — 그룹 헤더 + 액션(코드 회전/만료/보관/삭제) (client)
+ * GroupDetailClient — 그룹 헤더 + 액션(코드 회전/만료/보관/삭제)
+ *   (Quiet Luxury v2.0 — 다크 네이비 + 골드)
  */
 
 import { useRouter } from 'next/navigation';
@@ -15,6 +16,14 @@ interface Props {
   memberCount: number;
   resultCount: number;
 }
+
+const META_LABEL = {
+  fontFamily: 'var(--font-serif)',
+  fontSize: 11,
+  letterSpacing: '0.3em',
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+};
 
 export function GroupDetailClient({
   group: initial,
@@ -86,27 +95,87 @@ export function GroupDetailClient({
   };
 
   return (
-    <section className="rounded-question bg-sail-navy p-card text-white shadow-card-hover md:p-question">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <section
+      className="relative overflow-hidden rounded-modal border p-8 md:p-11"
+      style={{
+        background:
+          'linear-gradient(160deg, rgba(15,36,56,0.85) 0%, rgba(10,22,40,0.95) 100%)',
+        borderColor: 'rgba(201,162,39,0.22)',
+        boxShadow:
+          '0 24px 60px -20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
+      }}
+    >
+      <div
+        aria-hidden
+        className="absolute -right-20 -top-20 h-60 w-60 rounded-full"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(201,162,39,0.15) 0%, transparent 70%)',
+          filter: 'blur(28px)',
+        }}
+      />
+
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-center gap-2 text-caption font-semibold uppercase tracking-wide text-sail-orange">
-            그룹
+          <div className="mb-2 flex items-center gap-2.5">
+            <p className="text-sail-gold" style={META_LABEL}>
+              Group
+            </p>
             {isArchived && (
-              <span className="rounded-pill bg-white/20 px-2 py-0.5 text-tiny text-white">
-                보관됨
+              <span
+                className="rounded-pill px-2 py-0.5 text-sail-mist"
+                style={{
+                  background: 'rgba(232,237,242,0.08)',
+                  border: '1px solid rgba(232,237,242,0.12)',
+                  ...META_LABEL,
+                  fontSize: 9,
+                }}
+              >
+                Archived
               </span>
             )}
             {isExpired && !isArchived && (
-              <span className="rounded-pill bg-amber-300/30 px-2 py-0.5 text-tiny text-amber-100">
-                만료됨
+              <span
+                className="rounded-pill px-2 py-0.5"
+                style={{
+                  background: 'rgba(232,168,56,0.14)',
+                  border: '1px solid rgba(232,168,56,0.4)',
+                  color: 'var(--color-sail-warning)',
+                  ...META_LABEL,
+                  fontSize: 9,
+                }}
+              >
+                Expired
               </span>
             )}
           </div>
-          <h1 className="text-h1 font-bold leading-tight">{group.name}</h1>
+          <h1
+            className="font-serif text-sail-paper"
+            style={{
+              fontSize: 'clamp(28px, 4vw, 38px)',
+              fontWeight: 500,
+              letterSpacing: '-0.015em',
+              lineHeight: 1.15,
+            }}
+          >
+            {group.name}
+          </h1>
           {group.description && (
-            <p className="mt-2 text-bodySm opacity-85">{group.description}</p>
+            <p
+              className="mt-3 text-sail-mist"
+              style={{ fontSize: 15, lineHeight: 1.75 }}
+            >
+              {group.description}
+            </p>
           )}
-          <p className="mt-3 text-caption opacity-75">
+          <p
+            className="mt-4 text-sail-mist/80"
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 12,
+              letterSpacing: '0.1em',
+            }}
+          >
             멤버 {memberCount}명 · 결과 {resultCount}건 · 정원 {group.max_members}
             {group.expires_at && (
               <>
@@ -123,12 +192,25 @@ export function GroupDetailClient({
         </div>
 
         {/* 가입 코드 박스 */}
-        <div className="rounded-card bg-white/10 px-5 py-4 backdrop-blur-sm md:min-w-[200px]">
-          <p className="mb-1 text-tiny font-semibold uppercase tracking-wide opacity-75">
-            가입 코드
+        <div
+          className="rounded-modal px-5 py-4 md:min-w-[220px]"
+          style={{
+            background: 'rgba(10,22,40,0.5)',
+            border: '1px solid rgba(201,162,39,0.3)',
+          }}
+        >
+          <p className="text-sail-gold" style={{ ...META_LABEL, fontSize: 10 }}>
+            Group Code
           </p>
-          <div className="mb-2 flex items-baseline gap-3">
-            <span className="font-mono text-2xl font-bold tracking-widest">
+          <div className="mt-2 mb-3">
+            <span
+              className="font-serif text-sail-gold-soft"
+              style={{
+                fontSize: 28,
+                fontWeight: 600,
+                letterSpacing: '0.3em',
+              }}
+            >
               {group.code}
             </span>
           </div>
@@ -136,30 +218,64 @@ export function GroupDetailClient({
             <button
               type="button"
               onClick={handleCopy}
-              className="flex-1 rounded-md bg-white/20 px-2 py-1 text-tiny font-semibold hover:bg-white/30"
+              className="flex-1 rounded-md transition-colors duration-200"
+              style={{
+                background: copied
+                  ? 'rgba(74,222,128,0.15)'
+                  : 'rgba(201,162,39,0.12)',
+                border: copied
+                  ? '1px solid rgba(74,222,128,0.4)'
+                  : '1px solid rgba(201,162,39,0.3)',
+                color: copied
+                  ? 'var(--color-sail-success)'
+                  : 'var(--color-sail-gold)',
+                ...META_LABEL,
+                fontSize: 10,
+                padding: '5px 8px',
+              }}
             >
-              {copied ? '복사됨 ✓' : '복사'}
+              {copied ? '복사됨 ✓' : 'COPY'}
             </button>
             <button
               type="button"
               onClick={() => patch({ rotateCode: true }, 'rotate')}
               disabled={busy !== null}
-              className="flex-1 rounded-md bg-white/20 px-2 py-1 text-tiny font-semibold hover:bg-white/30 disabled:opacity-50"
+              className="flex-1 rounded-md transition-colors duration-200 disabled:opacity-50"
+              style={{
+                background: 'rgba(201,162,39,0.12)',
+                border: '1px solid rgba(201,162,39,0.3)',
+                color: 'var(--color-sail-gold)',
+                ...META_LABEL,
+                fontSize: 10,
+                padding: '5px 8px',
+              }}
             >
-              {busy === 'rotate' ? '회전 중…' : '코드 회전'}
+              {busy === 'rotate' ? '회전 중…' : 'ROTATE'}
             </button>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="mt-4 rounded-alert border-l-4 border-amber-300 bg-amber-50/15 px-4 py-2 text-bodySm text-amber-100">
+        <div
+          className="relative mt-5 rounded-alert border-l-2 px-5 py-3"
+          style={{
+            background: 'rgba(248,113,113,0.08)',
+            borderColor: 'var(--color-sail-danger)',
+            color: 'var(--color-sail-paper)',
+            fontSize: 13,
+            lineHeight: 1.7,
+          }}
+        >
           {error}
         </div>
       )}
 
       {/* 관리 액션 */}
-      <div className="mt-5 flex flex-wrap gap-2 border-t border-white/15 pt-4 text-bodySm">
+      <div
+        className="relative mt-6 flex flex-wrap gap-2 pt-5"
+        style={{ borderTop: '1px solid rgba(232,237,242,0.08)' }}
+      >
         {!isArchived ? (
           <Button
             variant="outline"
@@ -167,7 +283,6 @@ export function GroupDetailClient({
             type="button"
             onClick={() => patch({ status: 'archived' }, 'archive')}
             disabled={busy !== null}
-            className="border-white/40 bg-transparent text-white hover:bg-white/10"
           >
             {busy === 'archive' ? '보관 중…' : '보관함으로'}
           </Button>
@@ -178,7 +293,6 @@ export function GroupDetailClient({
             type="button"
             onClick={() => patch({ status: 'active' }, 'activate')}
             disabled={busy !== null}
-            className="border-white/40 bg-transparent text-white hover:bg-white/10"
           >
             {busy === 'activate' ? '활성화 중…' : '다시 활성화'}
           </Button>
@@ -194,9 +308,21 @@ export function GroupDetailClient({
         </Button>
       </div>
 
-      <p className="mt-3 text-tiny opacity-70">
+      <p
+        className="relative mt-4 text-sail-mist/70"
+        style={{ fontSize: 12, lineHeight: 1.7 }}
+      >
         멤버는 진단 시작 화면에서 코드{' '}
-        <span className="rounded-md bg-white/20 px-2 py-0.5 font-mono font-bold">
+        <span
+          className="rounded-md px-2 py-0.5"
+          style={{
+            background: 'rgba(201,162,39,0.12)',
+            color: 'var(--color-sail-gold)',
+            fontFamily: 'var(--font-serif)',
+            fontWeight: 600,
+            letterSpacing: '0.15em',
+          }}
+        >
           {group.code}
         </span>
         를 입력하면 결과가 이 그룹으로 모입니다.
