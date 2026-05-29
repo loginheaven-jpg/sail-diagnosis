@@ -124,10 +124,14 @@ function TestPageContent() {
         const { id } = (await res.json()) as { id: string };
         if (cancelled) return;
         // 결과 저장 성공 → store 초기화 (localStorage도 함께 비워짐).
-        // 그래야 다음 진단 시 이전 답안이 끌려오지 않는다.
-        // 단, 결과 페이지 자체는 result_id 기반이므로 store와 무관.
         useTestStore.getState().reset();
-        router.replace(`/result/${id}`);
+        // router.replace 대신 window.location.assign 사용 (full nav).
+        // 이유: zustand reset이 isCompleted/isStarted를 false로 바꾸면서
+        //   useEffect 의존성이 변경되고, Next.js 16의 SPA navigation이
+        //   stuck 상태가 되어 '나침반 그리는 중' 로딩이 무한 지속되는
+        //   회귀가 발생함. 결과 페이지는 어차피 force-dynamic SSR이라
+        //   full nav로 가도 비용 차이가 없다.
+        window.location.assign(`/result/${id}`);
       } catch (err) {
         if (cancelled) return;
         setErrorMsg(err instanceof Error ? err.message : String(err));

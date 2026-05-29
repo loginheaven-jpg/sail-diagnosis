@@ -259,7 +259,7 @@ export function IntroScreen({ prefilledGroupCode }: IntroScreenProps) {
             <div className="mt-2 min-h-[18px]" style={{ fontSize: 12 }}>
               {groupPreview.state === 'idle' && (
                 <span className="text-sail-mist/70">
-                  코치에게 받은 5자리 코드가 있다면 입력하세요.
+                  코드를 비워두면 결과는 어느 그룹에도 귀속되지 않습니다 (개인 진단).
                 </span>
               )}
               {groupPreview.state === 'invalid' && (
