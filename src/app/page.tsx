@@ -114,10 +114,12 @@ export default async function Home() {
           <div className="rise-5 flex flex-col gap-4 sm:flex-row">
             <Link
               href="/test"
-              className="inline-flex items-center justify-center rounded-btn font-bold text-sail-abyss transition-all duration-300"
+              className="inline-flex items-center justify-center rounded-btn transition-all duration-300"
               style={{
                 background:
                   'linear-gradient(135deg, var(--color-sail-gold) 0%, var(--color-sail-gold-soft) 100%)',
+                color: '#0A1628',
+                fontWeight: 700,
                 padding: '16px 34px',
                 fontSize: 15,
                 letterSpacing: '0.04em',
@@ -383,16 +385,18 @@ function RoleCard({
       </ol>
       <Link
         href={ctaHref}
-        className={`inline-flex items-center justify-center rounded-btn px-5 py-3 font-bold transition ${
+        className={`inline-flex items-center justify-center rounded-btn px-5 py-3 transition ${
           highlight
-            ? 'text-sail-abyss hover:translate-y-[-2px]'
-            : 'border border-sail-mist/30 text-sail-paper hover:border-sail-gold-soft hover:text-sail-gold-soft'
+            ? 'hover:translate-y-[-2px]'
+            : 'border border-sail-mist/30 text-sail-paper font-bold hover:border-sail-gold-soft hover:text-sail-gold-soft'
         }`}
         style={
           highlight
             ? {
                 background:
                   'linear-gradient(135deg, var(--color-sail-gold) 0%, var(--color-sail-gold-soft) 100%)',
+                color: '#0A1628',
+                fontWeight: 700,
                 fontSize: 14,
                 letterSpacing: '0.04em',
                 boxShadow: 'var(--shadow-gold)',
