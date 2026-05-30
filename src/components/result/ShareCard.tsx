@@ -3,12 +3,14 @@
 /**
  * ShareCard — 결과 공유 (Quiet Luxury v2.0)
  *
- * - URL 복사 (clipboard)
- * - 브라우저 네이티브 Share API (모바일)
- * - 카카오톡/트위터는 Phase 2 (next.md 보류)
+ * 3가지 공유 채널:
+ *   1. 링크 복사 — clipboard
+ *   2. 문자(SMS) — sms: deep link (모바일)
+ *   3. 카카오톡   — Kakao SDK가 로드돼 있으면 Kakao.Share.sendDefault,
+ *                  없으면 메시지를 클립보드에 복사 + 안내
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { useTestStore } from '@/stores/test-store';
@@ -20,6 +22,19 @@ interface ShareCardProps {
   nickname?: string | null;
 }
 
+type ShareChannel = 'link' | 'sms' | 'kakao';
+
+declare global {
+  interface Window {
+    Kakao?: {
+      isInitialized: () => boolean;
+      Share?: {
+        sendDefault: (opts: Record<string, unknown>) => void;
+      };
+    };
+  }
+}
+
 const META_LABEL = {
   fontFamily: 'var(--font-serif)',
   fontSize: 10,
@@ -28,47 +43,90 @@ const META_LABEL = {
   textTransform: 'uppercase' as const,
 };
 
+const CHANNEL_BTN_STYLE: React.CSSProperties = {
+  fontFamily: 'var(--font-korean)',
+  fontSize: 14,
+  fontWeight: 600,
+};
+
 export function ShareCard({ resultId, dominantType, nickname }: ShareCardProps) {
-  const [copied, setCopied] = useState(false);
+  const [done, setDone] = useState<ShareChannel | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const info = SAIL_TYPES[dominantType];
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    setIsMobile(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
+  }, []);
 
   const url =
     typeof window !== 'undefined'
       ? `${window.location.origin}/result/${resultId}`
       : `/result/${resultId}`;
 
-  const shareTitle = `${nickname ? nickname + '님의 ' : ''}SAIL 소통 스타일: ${info.emoji} ${info.englishName} ${info.koreanName} (${dominantType})`;
-  const shareText = `${info.tagline} — SAIL 소통 스타일 진단 결과`;
+  const shareTitle = `${nickname ? nickname + '님의 ' : ''}SAIL 소통 스타일 · ${info.englishName} ${info.koreanName}(${dominantType})`;
+  const shareText = `${info.tagline}
 
-  const handleCopy = async () => {
+▼ 진단 결과 보기
+${url}`;
+
+  const flash = (ch: ShareChannel) => {
+    setDone(ch);
+    setTimeout(() => setDone(null), 2000);
+  };
+
+  const copyText = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(text);
     } catch {
-      const input = document.createElement('input');
-      input.value = url;
-      document.body.appendChild(input);
-      input.select();
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
       document.execCommand('copy');
-      document.body.removeChild(input);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      document.body.removeChild(ta);
     }
   };
 
-  const handleNativeShare = async () => {
-    if (typeof navigator !== 'undefined' && 'share' in navigator) {
-      try {
-        await navigator.share({ title: shareTitle, text: shareText, url });
-      } catch {
-        // 사용자 취소 — 무시
-      }
-    }
+  const handleLink = async () => {
+    await copyText(url);
+    flash('link');
   };
 
-  const canNativeShare =
-    typeof navigator !== 'undefined' && 'share' in navigator;
+  const handleSms = async () => {
+    if (isMobile) {
+      // iOS는 &body, Android는 ?body. 둘 다 호환 가능한 형태.
+      window.location.href = `sms:?body=${encodeURIComponent(shareText)}`;
+    } else {
+      // 데스크탑 — 메시지를 복사
+      await copyText(shareText);
+    }
+    flash('sms');
+  };
+
+  const handleKakao = async () => {
+    if (
+      typeof window !== 'undefined' &&
+      window.Kakao?.isInitialized() &&
+      window.Kakao.Share?.sendDefault
+    ) {
+      window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: shareTitle,
+          description: info.tagline,
+          imageUrl: `${window.location.origin}/api/og?type=${dominantType}`,
+          link: { mobileWebUrl: url, webUrl: url },
+        },
+      });
+    } else {
+      // Kakao SDK 미설치 → 메시지 복사 + 카톡에 붙여넣기 안내
+      await copyText(shareText);
+    }
+    flash('kakao');
+  };
 
   return (
     <section
@@ -124,36 +182,61 @@ export function ShareCard({ resultId, dominantType, nickname }: ShareCardProps) 
             letterSpacing: '0.01em',
           }}
         />
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="rounded-md transition-all duration-300 hover:-translate-y-[1px]"
-          style={{
-            background: copied
-              ? 'rgba(46,158,107,0.18)'
-              : 'linear-gradient(135deg, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.08) 100%)',
-            border: copied
-              ? '1px solid rgba(46,158,107,0.5)'
-              : '1px solid rgba(201,162,39,0.4)',
-            color: copied ? 'var(--color-sail-success)' : 'var(--color-sail-gold)',
-            fontFamily: 'var(--font-serif)',
-            fontSize: 11,
-            letterSpacing: '0.18em',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            padding: '6px 14px',
-          }}
-        >
-          {copied ? '복사됨 ✓' : 'COPY'}
-        </button>
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        {canNativeShare && (
-          <Button variant="primary" onClick={handleNativeShare}>
-            공유하기 →
-          </Button>
+      {/* 3채널 버튼 */}
+      <div className="mt-5 grid grid-cols-3 gap-2.5">
+        <ChannelButton
+          icon="🔗"
+          label="링크 복사"
+          done={done === 'link'}
+          onClick={handleLink}
+        />
+        <ChannelButton
+          icon="💬"
+          label="문자"
+          done={done === 'sms'}
+          onClick={handleSms}
+        />
+        <ChannelButton
+          icon=""
+          label="카카오톡"
+          done={done === 'kakao'}
+          onClick={handleKakao}
+          kakao
+        />
+      </div>
+
+      {done === 'kakao' &&
+        typeof window !== 'undefined' &&
+        !window.Kakao?.isInitialized() && (
+          <p
+            className="mt-3 text-sail-success"
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 12,
+              letterSpacing: '0.05em',
+              lineHeight: 1.6,
+            }}
+          >
+            ✓ 메시지가 복사되었습니다. 카카오톡에 붙여넣어 공유하세요.
+          </p>
         )}
+      {done === 'sms' && !isMobile && (
+        <p
+          className="mt-3 text-sail-success"
+          style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: 12,
+            letterSpacing: '0.05em',
+            lineHeight: 1.6,
+          }}
+        >
+          ✓ 메시지가 복사되었습니다. (모바일에서는 문자앱이 바로 열립니다)
+        </p>
+      )}
+
+      <div className="mt-7 flex justify-center">
         <Button
           variant="outline"
           onClick={() => {
@@ -164,18 +247,62 @@ export function ShareCard({ resultId, dominantType, nickname }: ShareCardProps) 
           다시 진단하기
         </Button>
       </div>
-
-      <p
-        className="mt-5 text-sail-mist/50"
-        style={{
-          fontFamily: 'var(--font-serif)',
-          fontSize: 11,
-          letterSpacing: '0.15em',
-          lineHeight: 1.6,
-        }}
-      >
-        카카오톡·트위터 공유 카드는 다음 업데이트에서 제공될 예정입니다.
-      </p>
     </section>
+  );
+}
+
+function ChannelButton({
+  icon,
+  label,
+  done,
+  onClick,
+  kakao = false,
+}: {
+  icon: string;
+  label: string;
+  done: boolean;
+  onClick: () => void;
+  kakao?: boolean;
+}) {
+  const baseStyle: React.CSSProperties = kakao
+    ? {
+        background: '#FEE500',
+        color: '#191600',
+        border: '1px solid rgba(0,0,0,0.05)',
+      }
+    : {
+        background: 'rgba(10,22,40,0.55)',
+        color: 'var(--color-sail-paper)',
+        border: '1px solid rgba(232,237,242,0.12)',
+      };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center justify-center gap-2 rounded-btn transition-all duration-200 hover:-translate-y-[1px]"
+      style={{
+        ...baseStyle,
+        ...CHANNEL_BTN_STYLE,
+        padding: '12px 12px',
+        opacity: done ? 0.85 : 1,
+      }}
+    >
+      {icon && <span style={{ fontSize: 18 }}>{icon}</span>}
+      {kakao && (
+        <span
+          aria-hidden
+          style={{
+            fontFamily: 'system-ui, sans-serif',
+            fontWeight: 800,
+            fontSize: 14,
+            letterSpacing: '-0.04em',
+          }}
+        >
+          TALK
+        </span>
+      )}
+      <span>{done ? '✓ 완료' : label}</span>
+    </button>
   );
 }

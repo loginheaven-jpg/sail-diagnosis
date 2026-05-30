@@ -49,7 +49,7 @@ export function CrewMatrix({ dominantType }: CrewMatrixProps) {
           lineHeight: 1.3,
         }}
       >
-        선원 궁합
+        선원 매칭
       </h2>
       <p className="mt-2 text-sail-mist/80" style={{ fontSize: 14, lineHeight: 1.7 }}>
         {myInfo.englishName}({dominantType})인 당신이 다른 유형과 일할 때

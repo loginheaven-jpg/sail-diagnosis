@@ -275,17 +275,18 @@ export default async function Home() {
 
         <div className="grid gap-6 md:grid-cols-2">
           <RoleCard
-            badge="멤버 · 고객"
+            badge="고객"
             title="진단을 받는 사람"
             description="조직 구성원·팀원·교회 봉사자. 자신의 소통 스타일을 진단하고 효과적인 소통법을 익힙니다."
             steps={[
               '진단 시작 (가입 없이 가능)',
               '코치에게 받은 5자리 코드 입력 (선택)',
               '30문항 응답 → 결과 리포트',
-              '소통 가이드·궁합표 참고',
+              '소통 가이드·매칭표 참고',
             ]}
             ctaLabel={auth?.role === 'user' ? '진단하기' : '진단 시작'}
             ctaHref="/test"
+            highlight
           />
           <RoleCard
             badge="코치"
@@ -299,7 +300,6 @@ export default async function Home() {
             ]}
             ctaLabel={auth ? '코치 권한 신청' : '코치로 시작'}
             ctaHref={auth ? '/coach/apply' : '/login?redirect=/coach/apply'}
-            highlight
           />
         </div>
       </section>

@@ -17,6 +17,11 @@ interface Props {
   resultCount: number;
 }
 
+// 로컬 state를 두지 않는다 — PATCH 후 router.refresh()로
+// 서버 컴포넌트(=GroupDetailPage)가 재실행되며 group, InvitationBlock,
+// 결과 표 등 모두에 새 데이터가 일관되게 흘러간다.
+// (이전 버그: rotate 후 로컬 state만 갱신되어 InvitationBlock의 코드가 안 바뀜)
+
 const META_LABEL = {
   fontFamily: 'var(--font-serif)',
   fontSize: 11,
@@ -26,12 +31,11 @@ const META_LABEL = {
 };
 
 export function GroupDetailClient({
-  group: initial,
+  group,
   memberCount,
   resultCount,
 }: Props) {
   const router = useRouter();
-  const [group, setGroup] = useState<GroupRow>(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -53,7 +57,8 @@ export function GroupDetailClient({
       if (!res.ok || !json.group) {
         setError(json.error ?? '실패');
       } else {
-        setGroup(json.group);
+        // 서버 컴포넌트 재실행 → 모든 자식이 새 group을 prop으로 받음
+        router.refresh();
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

@@ -141,7 +141,7 @@ export default async function ResultPage({ params }: PageProps) {
       {/* 5. 소통 가이드 (신규) */}
       <CommunicationGuide dominantType={dominantType} />
 
-      {/* 6. 선원 궁합표 */}
+      {/* 6. 선원 매칭표 */}
       <CrewMatrix dominantType={dominantType} />
 
       {/* 7. 스타일 유연성 (신규) */}
