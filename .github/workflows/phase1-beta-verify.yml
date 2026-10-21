@@ -47,5 +47,10 @@ jobs:
         run: |
           node tests/test_results_security_db.mjs
           node tests/test_login_required_db.mjs
-      - name: Build production bundle
+      - name: Build production bundle with nonproduction placeholder public configuration
+        # This build only prerenders UI. Values must never point to the live project.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-only.invalid
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_not_a_real_key
+          SAIL_APP_ORIGIN: https://ci-only.invalid
         run: npm run build
