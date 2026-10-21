@@ -28,7 +28,7 @@ import { ProfileDetail } from '@/components/result/ProfileDetail';
 import { ShareCard } from '@/components/result/ShareCard';
 import { TypeCard } from '@/components/result/TypeCard';
 import { VersatilityCard } from '@/components/result/VersatilityCard';
-import { getAuthorizedResult } from '@/lib/results-security';
+import { actorUserId, getAuthorizedResult } from '@/lib/results-security';
 import { ShareTokenExchange } from '@/components/result/ShareTokenExchange';
 import { diagnose } from '@/lib/scoring/gaussian';
 import type { SailType } from '@/types/sail';
@@ -51,6 +51,10 @@ export const metadata: Metadata = {
 export default async function ResultPage({ params }: PageProps) {
   const { id } = await params;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) notFound();
+  if (!await actorUserId()) {
+    const destination = encodeURIComponent(`/result/${id}`);
+    return <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16"><section className="rounded-modal border border-sail-gold/20 p-8"><h1 className="font-serif text-2xl text-sail-paper">로그인이 필요합니다</h1><p className="mt-4 text-sm leading-7 text-sail-mist">내 진단 결과와 동의받은 공유 결과는 로그인 회원만 열람할 수 있습니다. 공유 링크로 오셨다면 로그인 후 원래 공유 링크를 다시 열어 주세요.</p><Link href={`/login?redirect=${destination}`} className="mt-6 inline-block text-sm text-sail-gold underline">로그인하고 결과 확인하기</Link></section></main>;
+  }
   const result = await getAuthorizedResult(id);
 
   if (!result) return <ShareTokenExchange resultId={id} />;
