@@ -26,6 +26,7 @@ export async function DELETE(request: NextRequest) {
     const body = recordBody(await readLimitedJson(request, 1024), ['resultId']);
     if (!validUuid(body.resultId)) throw new ResultSecurityError(400, '결과 주소를 확인해 주세요.');
     const actor = await capabilityContext();
+    if (!actor.userId) throw new ResultSecurityError(401, '결과 공유를 변경하려면 로그인해 주세요.');
     await throttleRequest(request, 'share-revoke', actor.userId);
     await resultRpc<number>('sail_revoke_share', { p_result_id: body.resultId, p_user_id: actor.userId, p_session_hash: actor.sessionHash, p_token_hash: null });
     return securityJson({ ok: true });
