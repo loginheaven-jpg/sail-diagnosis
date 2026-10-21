@@ -15,7 +15,7 @@ test('redirect destinations cannot change the approved origin or retain callback
   for (const destination of ['https://attacker.invalid/path', '//attacker.invalid/path', '/\\attacker.invalid', '/\n/attacker.invalid']) {
     assert.equal(authRedirectUrl(origin + '/auth/callback?code=synthetic-secret', destination, origin).href, origin + '/');
   }
-  assert.equal(authRedirectUrl(origin + '/auth/signout?untrusted=value', '/', undefined).href, origin + '/');
+  assert.equal(authRedirectUrl(origin + '/auth/signout?untrusted=value', '/', origin).href, origin + '/');
 });
 
 test('invalid configured origins fail closed instead of falling back to request host', () => {
