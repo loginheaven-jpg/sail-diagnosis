@@ -143,6 +143,7 @@ export async function throttleRequest(request: Request, action: string, userId: 
 
 export async function ensureParticipation(request: Request): Promise<{ sessionHash: string; userId: string | null; expiresAt: string }> {
   const userId = await actorUserId();
+  if (!userId) throw new ResultSecurityError(401, '로그인 후 진단을 이용해 주세요.');
   await throttleRequest(request, 'session', userId, 30, 60);
   const existing = (await cookies()).get(participationCookieName())?.value;
   if (validCapability(existing)) {
@@ -166,6 +167,7 @@ export async function ensureParticipation(request: Request): Promise<{ sessionHa
 
 export async function requireParticipation(): Promise<{ sessionHash: string; userId: string | null }> {
   const { sessionHash, userId } = await capabilityContext();
+  if (!userId) throw new ResultSecurityError(401, '로그인 후 진단을 이용해 주세요.');
   if (!sessionHash || !await resultRpc<boolean>('sail_session_valid', { p_session_hash: sessionHash, p_user_id: userId })) {
     throw new ResultSecurityError(401, '참여 세션이 만료되었습니다. 진단 화면에서 다시 시작해 주세요.');
   }
@@ -180,6 +182,7 @@ export function minimalResult(value: unknown): ResultDto | null {
 export async function getAuthorizedResult(id: string): Promise<ResultDto | null> {
   if (!validUuid(id)) return null;
   const context = await capabilityContext(id);
+  if (!context.userId) throw new ResultSecurityError(401, '결과를 보려면 로그인해 주세요.');
   const data = await resultRpc<unknown>('sail_read_result', {
     p_result_id: id, p_user_id: context.userId,
     p_session_hash: context.sessionHash, p_share_hash: context.shareHash,
