@@ -7,6 +7,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { createClient } from '@/lib/supabase/server';
+import { authRedirectUrl } from '@/lib/auth-redirect';
 import { requireSameOrigin } from '@/lib/result-security-policy';
 import { revokeParticipation, securityFailure } from '@/lib/results-security';
 
@@ -17,9 +18,6 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { error } = await supabase.auth.signOut();
     if (error) return securityFailure(error);
-    const home = request.nextUrl.clone();
-    home.pathname = '/';
-    home.search = '';
-    return NextResponse.redirect(home, { status: 303 });
+    return NextResponse.redirect(authRedirectUrl(request.url, '/'), { status: 303 });
   } catch (error) { return securityFailure(error); }
 }

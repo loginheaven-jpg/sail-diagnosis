@@ -13,21 +13,23 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { safeInternalRedirect } from '@/lib/auth-redirect';
+import { authRedirectUrl, safeInternalRedirect } from '@/lib/auth-redirect';
 import { capabilityContext, revokeParticipation, securityFailure } from '@/lib/results-security';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import type { UserRole } from '@/types/database';
 
 export async function GET(request: NextRequest) {
+  let loginUrl: URL;
+  try {
+    loginUrl = authRedirectUrl(request.url, '/login');
+    loginUrl.searchParams.set('error', '로그인을 완료하지 못했습니다. 다시 시도해 주세요.');
+  } catch (error) { return securityFailure(error); }
   const code = request.nextUrl.searchParams.get('code');
   const explicitRedirect = request.nextUrl.searchParams.get('redirect');
   const errorParam = request.nextUrl.searchParams.get('error_description');
 
   if (errorParam) {
-    const failUrl = request.nextUrl.clone();
-    failUrl.pathname = '/login';
-    failUrl.search = `?error=${encodeURIComponent('로그인을 완료하지 못했습니다. 다시 시도해 주세요.')}`;
-    return NextResponse.redirect(failUrl);
+    return NextResponse.redirect(loginUrl);
   }
 
   if (code) {
@@ -36,10 +38,7 @@ export async function GET(request: NextRequest) {
       const supabase = await createClient();
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
-        const failUrl = request.nextUrl.clone();
-        failUrl.pathname = '/login';
-        failUrl.search = `?error=${encodeURIComponent('로그인을 완료하지 못했습니다. 다시 시도해 주세요.')}`;
-        return NextResponse.redirect(failUrl);
+        return NextResponse.redirect(loginUrl);
       }
       try {
         await revokeParticipation(previous);
@@ -73,7 +72,7 @@ export async function GET(request: NextRequest) {
     destination = safeInternalRedirect(explicitRedirect);
   }
 
-  const dest = new URL(destination, request.nextUrl.origin);
+  const dest = authRedirectUrl(request.url, destination);
 
   return NextResponse.redirect(dest);
 }

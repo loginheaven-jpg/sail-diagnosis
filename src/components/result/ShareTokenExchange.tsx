@@ -1,12 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 /** A fragment secret never goes to a page request, server log, metadata or referrer. */
 export function ShareTokenExchange({ resultId }: { resultId: string }) {
-  const router = useRouter();
   const pending = useRef<Promise<boolean> | null>(null);
   const [state, setState] = useState<'checking' | 'unavailable'>('checking');
 
@@ -30,11 +28,13 @@ export function ShareTokenExchange({ resultId }: { resultId: string }) {
     let current = true;
     void pending.current.then(ok => {
       if (!current) return;
-      if (ok) router.refresh();
+      // A native clean-URL replacement prevents the router's original URL state
+      // from restoring the secret fragment after its RSC refresh.
+      if (ok) window.location.replace(window.location.pathname);
       else setState('unavailable');
     });
     return () => { current = false; };
-  }, [resultId, router]);
+  }, [resultId]);
 
   return <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
     <section className="rounded-modal border p-8" style={{ background: 'rgba(15,36,56,0.7)', borderColor: 'rgba(201,162,39,0.18)' }}>
