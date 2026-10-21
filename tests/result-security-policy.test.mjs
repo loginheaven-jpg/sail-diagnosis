@@ -67,6 +67,9 @@ test('idempotency is stable for reordered answers and changes for changed intent
 
 test('a same-origin browser mutation succeeds without trusting forwarded host values', () => {
   assert.equal(isSameOriginMutation(request('https://sail.example.invalid'), 'https://sail.example.invalid'), true);
+  // A missing configured canonical origin must fail closed even with a matching request URL.
+  assert.equal(isSameOriginMutation(request('https://sail.example.invalid'), ''), false);
+  assert.equal(isSameOriginMutation(request('https://sail.example.invalid'), 'https://sail.example.invalid/path'), false);
   assert.equal(isSameOriginMutation(request('https://attacker.invalid'), 'https://sail.example.invalid'), false);
   assert.equal(isSameOriginMutation(request(null), 'https://sail.example.invalid'), false);
   assert.equal(isSameOriginMutation(request('null'), 'https://sail.example.invalid'), false);
