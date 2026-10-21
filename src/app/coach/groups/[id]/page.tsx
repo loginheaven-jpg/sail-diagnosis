@@ -47,6 +47,20 @@ const TYPE_HEX: Record<SailType, string> = {
   L: '#3DB389',
 };
 
+async function loadGroupSnapshot(id: string) {
+  const svc = createServiceRoleClient();
+  const { data: group } = await svc
+    .from('groups')
+    .select('*')
+    .eq('id', id)
+    .single<GroupRow>();
+  return {
+    svc,
+    group,
+    isExpired: Boolean(group?.expires_at && Date.parse(group.expires_at) < Date.now()),
+  };
+}
+
 export default async function GroupDetailPage({ params }: PageProps) {
   const { id } = await params;
   if (!UUID_REGEX.test(id)) notFound();
@@ -63,15 +77,8 @@ export default async function GroupDetailPage({ params }: PageProps) {
     );
   }
 
-  const svc = createServiceRoleClient();
-  const { data: groupRaw } = await svc
-    .from('groups')
-    .select('*')
-    .eq('id', id)
-    .single<GroupRow>();
-
-  if (!groupRaw) notFound();
-  const group: GroupRow = groupRaw;
+  const { svc, group, isExpired } = await loadGroupSnapshot(id);
+  if (!group) notFound();
 
   const isOwner = group.coach_id === auth.userId;
   if (!isOwner && auth.role !== 'admin') {
@@ -143,6 +150,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
         group={group}
         memberCount={memberList.length}
         resultCount={resultList.length}
+        isExpired={isExpired}
       />
 
       <InvitationBlock group={group} />

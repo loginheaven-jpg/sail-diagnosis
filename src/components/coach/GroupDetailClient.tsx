@@ -15,6 +15,7 @@ interface Props {
   group: GroupRow;
   memberCount: number;
   resultCount: number;
+  isExpired: boolean;
 }
 
 // 로컬 state를 두지 않는다 — PATCH 후 router.refresh()로
@@ -34,6 +35,7 @@ export function GroupDetailClient({
   group,
   memberCount,
   resultCount,
+  isExpired,
 }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -41,9 +43,6 @@ export function GroupDetailClient({
   const [copied, setCopied] = useState(false);
 
   const isArchived = group.status === 'archived';
-  const isExpired =
-    group.expires_at && new Date(group.expires_at).getTime() < Date.now();
-
   const patch = async (body: Record<string, unknown>, busyKey: string) => {
     setBusy(busyKey);
     setError(null);

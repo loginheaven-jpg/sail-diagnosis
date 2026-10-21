@@ -9,7 +9,7 @@
  * - 진단 시작 버튼
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useTestStore } from '@/stores/test-store';
 import {
@@ -44,51 +44,47 @@ export function IntroScreen({ prefilledGroupCode }: IntroScreenProps) {
   const [groupCodeInput, setGroupCodeInputLocal] = useState(
     prefilledGroupCode ? normalizeGroupCode(prefilledGroupCode) : ''
   );
-  const [groupPreview, setGroupPreview] = useState<GroupPreview>({ state: 'idle' });
+  const [checkedGroup, setCheckedGroup] = useState<{
+    code: string;
+    preview: GroupPreview;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const lastCheckRef = useRef<string>('');
+  const code = normalizeGroupCode(groupCodeInput);
+  const groupPreview: GroupPreview = code.length === 0
+    ? { state: 'idle' }
+    : !GROUP_CODE_REGEX.test(code)
+      ? { state: 'invalid', message: `${GROUP_CODE_LENGTH}자리 영숫자 (혼동 글자 0/O/1/I/L 제외)` }
+      : checkedGroup?.code === code
+        ? checkedGroup.preview
+        : { state: 'checking' };
+
   useEffect(() => {
-    const code = normalizeGroupCode(groupCodeInput);
-    if (code.length === 0) {
-      setGroupPreview({ state: 'idle' });
-      return;
-    }
-    if (!GROUP_CODE_REGEX.test(code)) {
-      setGroupPreview({
-        state: 'invalid',
-        message: `${GROUP_CODE_LENGTH}자리 영숫자 (혼동 글자 0/O/1/I/L 제외)`,
-      });
-      return;
-    }
-    setGroupPreview({ state: 'checking' });
-    lastCheckRef.current = code;
+    if (!GROUP_CODE_REGEX.test(code)) return;
+    let active = true;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
           `/api/groups/lookup?code=${encodeURIComponent(code)}`,
-          { cache: 'no-store' }
+          { cache: 'no-store', signal: controller.signal }
         );
-        if (lastCheckRef.current !== code) return;
         if (res.ok) {
           const json = (await res.json()) as { name: string };
-          setGroupPreview({ state: 'found', name: json.name });
-        } else {
-          setGroupPreview({
-            state: 'not-found',
-            message: '존재하지 않거나 만료된 코드입니다.',
-          });
+          if (active) setCheckedGroup({ code, preview: { state: 'found', name: json.name } });
+        } else if (active) {
+          setCheckedGroup({ code, preview: { state: 'not-found', message: '존재하지 않거나 만료된 코드입니다.' } });
         }
       } catch {
-        if (lastCheckRef.current !== code) return;
-        setGroupPreview({
-          state: 'not-found',
-          message: '코드 확인 중 오류가 발생했습니다.',
-        });
+        if (active) setCheckedGroup({ code, preview: { state: 'not-found', message: '코드 확인 중 오류가 발생했습니다.' } });
       }
     }, 400);
-    return () => clearTimeout(timer);
-  }, [groupCodeInput]);
+    return () => {
+      active = false;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [code]);
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
