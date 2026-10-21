@@ -39,7 +39,7 @@ export function ShareTokenExchange({ resultId }: { resultId: string }) {
   return <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
     <section className="rounded-modal border p-8" style={{ background: 'rgba(15,36,56,0.7)', borderColor: 'rgba(201,162,39,0.18)' }}>
       <h1 className="font-serif text-2xl text-sail-paper">{state === 'checking' ? '공유 권한을 확인하고 있습니다' : '이 결과를 열 수 없습니다'}</h1>
-      <p className="mt-4 text-sm leading-7 text-sail-mist" role="status">{state === 'checking' ? '잠시만 기다려 주세요.' : '본인의 참여 세션이나 유효한 공유 링크가 필요합니다. 만료되거나 철회된 링크는 작성자에게 다시 요청해 주세요.'}</p>
+      <p className="mt-4 text-sm leading-7 text-sail-mist" role="status">{state === 'checking' ? '잠시만 기다려 주세요.' : '로그인 후 본인 결과 또는 유효한 공유 링크를 열어 주세요. 만료되거나 철회된 링크는 작성자에게 다시 요청해 주세요.'}</p>
       <Link href="/" className="mt-6 inline-block text-sm text-sail-gold">SAIL 홈으로</Link>
     </section>
   </main>;
