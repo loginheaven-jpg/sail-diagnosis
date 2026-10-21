@@ -214,7 +214,7 @@ function TestPageContent() {
       {phase === 3 && questionIndex === 9 && groupCode && (
         <label className="mb-5 flex w-full max-w-2xl items-start gap-3 rounded-card border p-4 text-sm leading-6 text-sail-mist" style={{ borderColor: 'rgba(201,162,39,0.2)' }}>
           <input type="checkbox" checked={shareWithCoach} onChange={event => setShareWithCoach(event.target.checked)} className="mt-1" />
-          <span>이 결과를 입력한 그룹의 담당 코치에게 공유합니다. <span className="text-sail-gold">선택</span><br />동의하지 않아도 진단과 본인 결과 보기는 이용할 수 있습니다. 비회원 공유는 참여 세션 최대 24시간 이내, 로그인한 본인 결과의 공유는 최대 30일입니다. 본인 접근 권한이 유효한 동안 결과 화면에서 철회할 수 있습니다.</span>
+          <span>이 결과를 입력한 그룹의 담당 코치에게 공유합니다. <span className="text-sail-gold">선택</span><br />동의하지 않아도 본인의 진단과 결과 열람은 이용할 수 있습니다. 코치 공유 동의는 최대 30일이며 결과 화면에서 언제든 철회할 수 있습니다. 본인 접근 권한이 유효한 동안 결과 화면에서 철회할 수 있습니다.</span>
         </label>
       )}
 
