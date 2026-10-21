@@ -38,11 +38,14 @@ export function isSameOriginMutation(
   configuredOrigin = process.env.SAIL_APP_ORIGIN,
 ): boolean {
   const origin = request.headers.get('origin');
-  if (!origin || origin === 'null' || request.headers.get('sec-fetch-site') === 'cross-site') return false;
+  // Production must never derive the trusted origin from a proxy-supplied Host/request URL.
+  // SAIL_APP_ORIGIN must be explicitly configured for every deployment environment.
+  if (!configuredOrigin || !origin || origin === 'null' || request.headers.get('sec-fetch-site') === 'cross-site') return false;
   try {
-    const expected = new URL(configuredOrigin || request.url);
+    const expected = new URL(configuredOrigin);
     const actual = new URL(origin);
     return ['http:', 'https:'].includes(expected.protocol)
+      && expected.origin === configuredOrigin
       && actual.origin === expected.origin
       && origin === actual.origin;
   } catch {
