@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
+import { safeInternalRedirect } from '@/lib/auth-redirect';
 import { formatPhone, isValidPhone, normalizePhone } from '@/lib/phone';
 
 interface Props {
@@ -77,7 +78,7 @@ export function OnboardingForm({
         setBusy(false);
         return;
       }
-      router.replace(redirectTo);
+      router.replace(safeInternalRedirect(redirectTo));
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

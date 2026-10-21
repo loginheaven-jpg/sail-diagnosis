@@ -13,6 +13,8 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { safeInternalRedirect } from '@/lib/auth-redirect';
+import { capabilityContext, revokeParticipation, securityFailure } from '@/lib/results-security';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import type { UserRole } from '@/types/database';
 
@@ -24,19 +26,28 @@ export async function GET(request: NextRequest) {
   if (errorParam) {
     const failUrl = request.nextUrl.clone();
     failUrl.pathname = '/login';
-    failUrl.search = `?error=${encodeURIComponent(errorParam)}`;
+    failUrl.search = `?error=${encodeURIComponent('로그인을 완료하지 못했습니다. 다시 시도해 주세요.')}`;
     return NextResponse.redirect(failUrl);
   }
 
   if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) {
-      const failUrl = request.nextUrl.clone();
-      failUrl.pathname = '/login';
-      failUrl.search = `?error=${encodeURIComponent(error.message)}`;
-      return NextResponse.redirect(failUrl);
-    }
+    try {
+      const previous = await capabilityContext();
+      const supabase = await createClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        const failUrl = request.nextUrl.clone();
+        failUrl.pathname = '/login';
+        failUrl.search = `?error=${encodeURIComponent('로그인을 완료하지 못했습니다. 다시 시도해 주세요.')}`;
+        return NextResponse.redirect(failUrl);
+      }
+      try {
+        await revokeParticipation(previous);
+      } catch (error) {
+        await supabase.auth.signOut({ scope: 'local' });
+        throw error;
+      }
+    } catch (error) { return securityFailure(error); }
   }
 
   // 역할 기반 라우팅
@@ -57,30 +68,12 @@ export async function GET(request: NextRequest) {
 
     const role = profile?.role ?? 'user';
 
-    // explicit redirect 우선 (단 안전한 내부 경로만)
-    if (
-      explicitRedirect &&
-      explicitRedirect.startsWith('/') &&
-      !explicitRedirect.startsWith('//')
-    ) {
-      destination = explicitRedirect;
-    } else if (role === 'admin') {
-      destination = '/admin';
-    } else if (role === 'coach') {
-      destination = '/coach';
-    } else {
-      destination = '/';
-    }
-  } else if (
-    explicitRedirect &&
-    explicitRedirect.startsWith('/') &&
-    !explicitRedirect.startsWith('//')
-  ) {
-    destination = explicitRedirect;
+    destination = safeInternalRedirect(explicitRedirect, role === 'admin' ? '/admin' : role === 'coach' ? '/coach' : '/');
+  } else {
+    destination = safeInternalRedirect(explicitRedirect);
   }
 
-  const dest = request.nextUrl.clone();
-  dest.pathname = destination;
-  dest.search = '';
+  const dest = new URL(destination, request.nextUrl.origin);
+
   return NextResponse.redirect(dest);
 }

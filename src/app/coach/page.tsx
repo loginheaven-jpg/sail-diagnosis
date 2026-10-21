@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { CoachDashboardClient } from '@/components/coach/CoachDashboardClient';
+import { listAuthorizedGroupResults } from '@/lib/results-security';
 import { getAuthContext, hasMinRole } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import type { GroupRow } from '@/types/database';
@@ -94,20 +95,17 @@ export default async function CoachDashboardPage() {
 
   const stats = await Promise.all(
     groupList.map(async (g) => {
-      const [memberCnt, resultCnt] = await Promise.all([
+      const [memberCnt, visibleResults] = await Promise.all([
         svc
           .from('group_members')
           .select('*', { count: 'exact', head: true })
           .eq('group_id', g.id),
-        svc
-          .from('results')
-          .select('*', { count: 'exact', head: true })
-          .eq('group_id', g.id),
+        listAuthorizedGroupResults(g.id),
       ]);
       return {
         groupId: g.id,
         members: memberCnt.count ?? 0,
-        results: resultCnt.count ?? 0,
+        results: visibleResults.length,
       };
     })
   );

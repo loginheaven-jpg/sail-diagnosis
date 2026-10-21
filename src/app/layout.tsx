@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
 import { Header } from '@/components/layout/Header';
+import { TestProgressBoundary } from '@/components/test/TestProgressBoundary';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -55,6 +56,9 @@ export default function RootLayout({
         <div className="atmosphere" aria-hidden="true" />
         <div className="grain" aria-hidden="true" />
 
+        <Suspense fallback={null}>
+          <TestProgressBoundary />
+        </Suspense>
         <Suspense fallback={null}>
           <Header />
         </Suspense>

@@ -10,7 +10,7 @@
  *   1) 모든 navigation 마다 세션 쿠키를 자동 갱신.
  *   2) 보호 경로(/dashboard, /coach, /admin) 미인증 사용자를 /login으로.
  *   3) /admin 은 role='admin'만.
- *   4) 로그인된 사용자라도 full_name 또는 phone이 비어있으면
+ *   4) 로그인된 사용자라도 name 또는 phone이 비어있으면
  *      /onboarding 으로 강제 이동 (단 /onboarding, /auth/*, /api/* 본인 경로는 제외).
  */
 
@@ -81,20 +81,20 @@ export async function updateSession(request: NextRequest) {
 
   // === 로그인 사용자 대상 검사 ===
 
-  // 프로필 보완 강제 (full_name + phone)
+  // Operational DB contract is name; the form's full_name is only a display DTO.
   const exempt = ONBOARDING_EXEMPT_PATHS.some((p) => pathname.startsWith(p));
   if (!exempt) {
     const { data: profile } = await supabase
       .from('users')
-      .select('full_name, phone, role')
+      .select('name, phone, role')
       .eq('id', user.id)
       .single<{
-        full_name: string | null;
+        name: string | null;
         phone: string | null;
         role: 'user' | 'coach' | 'admin';
       }>();
 
-    if (profile && (!profile.full_name || !profile.phone)) {
+    if (profile && (!profile.name || !profile.phone)) {
       const onboardingUrl = request.nextUrl.clone();
       onboardingUrl.pathname = '/onboarding';
       onboardingUrl.searchParams.set('redirect', pathname);

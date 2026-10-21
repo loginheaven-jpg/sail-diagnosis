@@ -19,11 +19,11 @@ export async function Header() {
     const svc = createServiceRoleClient();
     const { data } = await svc
       .from('users')
-      .select('full_name, nickname')
+      .select('name, nickname')
       .eq('id', auth.userId)
-      .single<{ full_name: string | null; nickname: string | null }>();
+      .single<{ name: string | null; nickname: string | null }>();
     displayName =
-      data?.full_name ?? data?.nickname ?? auth.email?.split('@')[0] ?? null;
+      data?.name ?? data?.nickname ?? auth.email?.split('@')[0] ?? null;
   }
 
   return (

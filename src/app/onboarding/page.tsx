@@ -3,10 +3,12 @@
  */
 
 import { redirect } from 'next/navigation';
+import { safeInternalRedirect } from '@/lib/auth-redirect';
 
 import { OnboardingForm } from '@/components/onboarding/OnboardingForm';
 import { getAuthContext } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { toUserProfile } from '@/lib/user-profile';
 import type { UserRow } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
@@ -28,15 +30,16 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
   if (!auth) redirect('/login?redirect=/onboarding');
 
   const svc = createServiceRoleClient();
-  const { data: user } = await svc
+  const { data: row } = await svc
     .from('users')
     .select('*')
     .eq('id', auth.userId)
     .single<UserRow>();
-  if (!user) redirect('/login');
+  if (!row) redirect('/login');
+  const user = toUserProfile(row);
 
   const { redirect: redirectTo } = await searchParams;
-  const next = redirectTo && redirectTo.startsWith('/') ? redirectTo : '/';
+  const next = safeInternalRedirect(redirectTo);
 
   if (user.full_name && user.phone) {
     redirect(next);

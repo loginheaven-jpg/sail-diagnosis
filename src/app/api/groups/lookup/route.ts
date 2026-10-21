@@ -1,54 +1,28 @@
-/**
- * GET /api/groups/lookup?code=ABCD7
- *
- * 비로그인 사용자가 진단 시작 전에 그룹 코드의 유효성과 그룹명을
- * 미리 확인할 수 있는 가벼운 lookup 엔드포인트.
- *
- * 반환:
- *   200 { name: string }      — 활성 그룹 발견
- *   404 { error }              — 없음/만료/비활성
- *   400 { error }              — 코드 형식 오류
- *
- * RPC resolve_group_by_code() 는 만료/비활성을 자동 필터링한다.
- */
-
-import { NextResponse, type NextRequest } from 'next/server';
-
+/** Public invitation preview returns only a currently active group name. */
+import type { NextRequest } from 'next/server';
+import { isSameOriginMutation, ResultSecurityError, validUuid } from '@/lib/result-security-policy';
+import { actorUserId, securityFailure, securityJson, throttleRequest } from '@/lib/results-security';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { GROUP_CODE_REGEX, normalizeGroupCode } from '@/types/sail';
 
+export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
-  const codeRaw = request.nextUrl.searchParams.get('code');
-  if (!codeRaw) {
-    return NextResponse.json({ error: 'code required' }, { status: 400 });
-  }
-  const code = normalizeGroupCode(codeRaw);
-  if (!GROUP_CODE_REGEX.test(code)) {
-    return NextResponse.json({ error: 'invalid code format' }, { status: 400 });
-  }
-
-  const svc = createServiceRoleClient();
-  const { data: groupId } = (await svc.rpc(
-    'resolve_group_by_code' as never,
-    { p_code: code } as never
-  )) as { data: string | null; error: { message: string } | null };
-
-  if (!groupId) {
-    return NextResponse.json(
-      { error: 'not found or expired' },
-      { status: 404 }
-    );
-  }
-
-  // 그룹명만 노출 (다른 필드는 보호)
-  const { data: group } = await svc
-    .from('groups')
-    .select('name')
-    .eq('id', groupId)
-    .single<{ name: string }>();
-
-  if (!group) {
-    return NextResponse.json({ error: 'not found' }, { status: 404 });
-  }
-  return NextResponse.json({ name: group.name });
+  try {
+    if (request.headers.get('sec-fetch-site') === 'cross-site' || (request.headers.has('origin') && !isSameOriginMutation(request))) throw new ResultSecurityError(403, '요청 출처를 확인해 주세요.');
+    if (request.nextUrl.search.length > 128 || request.nextUrl.searchParams.getAll('code').length !== 1 || [...request.nextUrl.searchParams.keys()].some((key) => key !== 'code')) throw new ResultSecurityError(400, '그룹 코드를 확인해 주세요.');
+    const raw = request.nextUrl.searchParams.get('code');
+    if (!raw || raw.length > 32) throw new ResultSecurityError(400, '그룹 코드를 확인해 주세요.');
+    const code = normalizeGroupCode(raw);
+    if (!GROUP_CODE_REGEX.test(code)) throw new ResultSecurityError(400, '그룹 코드를 확인해 주세요.');
+    const actor = await actorUserId();
+    await throttleRequest(request, 'group-lookup', actor, 60, 60);
+    const service = createServiceRoleClient();
+    const resolved = await service.rpc('resolve_group_by_code' as never, { p_code: code } as never) as unknown as { data: string | null; error: unknown };
+    if (resolved.error) throw new ResultSecurityError(503, '그룹 연결을 확인하지 못했습니다.');
+    if (!validUuid(resolved.data)) throw new ResultSecurityError(404, '그룹이 없거나 참여 기간이 종료되었습니다.');
+    const { data, error } = await service.from('groups').select('name,status,expires_at').eq('id', resolved.data).single<{ name: string; status: string; expires_at: string | null }>();
+    if (error) throw new ResultSecurityError(503, '그룹 연결을 확인하지 못했습니다.');
+    if (!data || data.status !== 'active' || (data.expires_at && Date.parse(data.expires_at) <= Date.now())) throw new ResultSecurityError(404, '그룹이 없거나 참여 기간이 종료되었습니다.');
+    return securityJson({ name: data.name });
+  } catch (error) { return securityFailure(error); }
 }

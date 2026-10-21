@@ -3,9 +3,10 @@
  *
  * 정책 (사용자 결정):
  *   - 코드를 비워두고 진단한 결과는 슈퍼어드민의 "general" 그룹에 귀속된다.
- *   - 어드민만 그 결과를 열람할 수 있다 (RLS 자동 적용).
+ *   - 그룹 연결 자체는 결과 열람권한/공유동의가 아니다. 공통 보안 RPC가
+ *     본인 참여 세션·계정 또는 명시적인 유효 공유를 별도로 검사한다.
  *   - 그룹의 code는 시스템 예약값 '88888'. 사용자가 우연히 입력해도
- *     접근 결과는 동일하다 (어떻게든 어드민만 보는 그룹이므로).
+ *     그룹 연결만으로 관리자/코치의 결과 열람권한을 만들지 않는다.
  *
  * 구현:
  *   - 마이그레이션 없이 런타임에서 lazy create. 모듈 단위 캐시로 매 요청
@@ -19,6 +20,16 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
 const SUPERADMIN_EMAIL = 'loginheaven@gmail.com';
 const GENERAL_GROUP_NAME = 'general';
 const GENERAL_GROUP_CODE = '88888';
+
+function configuredAdminEmail(): string {
+  const configured = process.env.SAIL_GENERAL_ADMIN_EMAIL;
+  if (configured === undefined) return SUPERADMIN_EMAIL;
+  const value = configured.trim().toLowerCase();
+  if (value.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    throw new Error('General group administrator configuration is invalid');
+  }
+  return value;
+}
 
 let cachedGeneralGroupId: string | null = null;
 let lookupInFlight: Promise<string | null> | null = null;
@@ -35,7 +46,8 @@ export async function getOrCreateGeneralGroup(): Promise<string | null> {
       const { data: admin } = await svc
         .from('users')
         .select('id')
-        .eq('email', SUPERADMIN_EMAIL)
+        .eq('email', configuredAdminEmail())
+        .eq('role', 'admin')
         .maybeSingle<{ id: string }>();
       if (!admin) return null;
 
@@ -58,7 +70,7 @@ export async function getOrCreateGeneralGroup(): Promise<string | null> {
           coach_id: admin.id,
           name: GENERAL_GROUP_NAME,
           description:
-            '코드 없이 진단한 익명 사용자가 자동으로 귀속되는 시스템 그룹. 관리자만 결과를 열람합니다.',
+            '코드 없는 진단의 시스템 연결 그룹. 결과 열람은 별도 권한과 유효한 공유 동의를 확인합니다.',
           code: GENERAL_GROUP_CODE,
           max_members: 1000000,
           status: 'active',

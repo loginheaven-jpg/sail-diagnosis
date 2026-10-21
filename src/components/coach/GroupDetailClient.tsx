@@ -181,7 +181,7 @@ export function GroupDetailClient({
               letterSpacing: '0.1em',
             }}
           >
-            멤버 {memberCount}명 · 결과 {resultCount}건 · 정원 {group.max_members}
+            멤버 {memberCount}명 · 공유 동의 결과 {resultCount}건 · 정원 {group.max_members}
             {group.expires_at && (
               <>
                 {' · '}
@@ -330,7 +330,7 @@ export function GroupDetailClient({
         >
           {group.code}
         </span>
-        를 입력하면 결과가 이 그룹으로 모입니다.
+        를 입력해 참여할 수 있습니다. 결과는 참여자가 코치 공유에 별도로 동의한 경우에만 열람할 수 있습니다.
       </p>
     </section>
   );

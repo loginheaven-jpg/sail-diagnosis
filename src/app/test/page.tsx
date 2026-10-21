@@ -10,8 +10,8 @@
  *   - isCompleted         → POST /api/diagnosis → /result/[id] 리다이렉트
  */
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
 
 import { IntroScreen } from '@/components/test/IntroScreen';
 import { PhaseChoice } from '@/components/test/PhaseChoice';
@@ -20,8 +20,6 @@ import { PhaseSpectrum } from '@/components/test/PhaseSpectrum';
 import { TransitionScreen } from '@/components/test/TransitionScreen';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useTestStore } from '@/stores/test-store';
-
-type ViewMode = 'phase' | 'transition' | 'submitting' | 'submit-error';
 
 const PHASE_LABELS: Record<1 | 2 | 3, string> = {
   1: 'Phase 1 · 상황 판단',
@@ -66,7 +64,6 @@ function TestPageFallback() {
 }
 
 function TestPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   // ?group=XXXXX 또는 ?session=XXXXX (레거시 호환)
   const groupParam =
@@ -79,77 +76,58 @@ function TestPageContent() {
   const nickname = useTestStore((s) => s.nickname);
   const groupCode = useTestStore((s) => s.groupCode);
   const answers = useTestStore((s) => s.answers);
+  const requestId = useTestStore((s) => s.requestId);
+  const shareWithCoach = useTestStore((s) => s.shareWithCoach);
+  const setShareWithCoach = useTestStore((s) => s.setShareWithCoach);
 
-  const [mode, setMode] = useState<ViewMode>('phase');
-  const [transitionPhase, setTransitionPhase] = useState<2 | 3 | null>(null);
-  const [prevPhase, setPrevPhase] = useState<typeof phase>(phase);
+  const [acknowledgedPhase, setAcknowledgedPhase] = useState(phase);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const submission = useRef<Promise<string> | null>(null);
 
-  // Phase 변경 감지 → 전환 화면 (단, phase 1 → 2 그리고 2 → 3만)
+  // A completion has one idempotency key. Changing the loading/error UI must
+  // not cancel the request or automatically retry a failed save.
   useEffect(() => {
-    if (!isStarted) return;
-    if (phase !== prevPhase) {
-      if (phase === 2 || phase === 3) {
-        setTransitionPhase(phase);
-        setMode('transition');
-      }
-      setPrevPhase(phase);
-    }
-  }, [phase, prevPhase, isStarted]);
-
-  // 진단 완료 → API 저장 → /result/[id]
-  useEffect(() => {
-    if (!isCompleted || mode === 'submitting') return;
-    let cancelled = false;
-    setMode('submitting');
-    setErrorMsg(null);
-
-    void (async () => {
-      try {
-        const res = await fetch('/api/diagnosis', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nickname,
-            groupCode,
-            answers,
-            device:
-              typeof navigator !== 'undefined' ? navigator.userAgent : null,
-          }),
+    if (!isCompleted || !requestId) return;
+    let current = true;
+    if (!submission.current) {
+      submission.current = (async () => {
+        const session = await fetch('/api/diagnosis/session', {
+          method: 'POST', credentials: 'same-origin', cache: 'no-store',
+          headers: { 'Content-Type': 'application/json' }, body: '{}',
         });
-        if (!res.ok) {
-          const detail = await res.text();
-          throw new Error(`결과 저장 실패 (${res.status}): ${detail.slice(0, 120)}`);
+        if (!session.ok) throw new Error('참여 세션을 준비하지 못했습니다. 다시 시도해 주세요.');
+        const response = await fetch('/api/diagnosis', {
+          method: 'POST', credentials: 'same-origin', cache: 'no-store',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname, groupCode, answers, requestId, shareWithCoach, device: navigator.userAgent }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || typeof data.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.id)) {
+          throw new Error(typeof data.error === 'string' ? data.error : '결과를 저장하지 못했습니다. 다시 시도해 주세요.');
         }
-        const { id } = (await res.json()) as { id: string };
-        if (cancelled) return;
-        // 결과 저장 성공 → store 초기화 (localStorage도 함께 비워짐).
-        useTestStore.getState().reset();
-        // router.replace 대신 window.location.assign 사용 (full nav).
-        // 이유: zustand reset이 isCompleted/isStarted를 false로 바꾸면서
-        //   useEffect 의존성이 변경되고, Next.js 16의 SPA navigation이
-        //   stuck 상태가 되어 '나침반 그리는 중' 로딩이 무한 지속되는
-        //   회귀가 발생함. 결과 페이지는 어차피 force-dynamic SSR이라
-        //   full nav로 가도 비용 차이가 없다.
-        window.location.assign(`/result/${id}`);
-      } catch (err) {
-        if (cancelled) return;
-        setErrorMsg(err instanceof Error ? err.message : String(err));
-        setMode('submit-error');
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isCompleted, mode, nickname, groupCode, answers, router]);
+        return data.id as string;
+      })();
+    }
+    const pending = submission.current;
+    void pending.then(id => {
+      if (!current) return;
+      useTestStore.getState().reset();
+      window.location.assign(`/result/${id}`);
+    }).catch(failure => {
+      if (!current) return;
+      if (submission.current === pending) submission.current = null;
+      setErrorMsg(failure instanceof Error ? failure.message : '결과를 저장하지 못했습니다.');
+    });
+    return () => { current = false; };
+  }, [isCompleted, attempt, nickname, groupCode, answers, requestId, shareWithCoach]);
 
   // === 화면 분기 ===
   if (!isStarted) {
     return <IntroScreen prefilledGroupCode={groupParam} />;
   }
 
-  if (mode === 'submitting') {
+  if (isCompleted && !errorMsg) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
         <div className="text-center">
@@ -168,7 +146,7 @@ function TestPageContent() {
     );
   }
 
-  if (mode === 'submit-error') {
+  if (isCompleted && errorMsg) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
         <div className="w-full max-w-md text-center">
@@ -183,7 +161,7 @@ function TestPageContent() {
             {errorMsg}
           </p>
           <button
-            onClick={() => setMode('phase')}
+            onClick={() => { setErrorMsg(null); setAttempt(value => value + 1); }}
             className="inline-flex items-center justify-center rounded-btn transition-all duration-300 hover:-translate-y-[2px]"
             style={{
               background:
@@ -204,8 +182,8 @@ function TestPageContent() {
     );
   }
 
-  if (mode === 'transition' && transitionPhase) {
-    const t = TRANSITION_MESSAGES[transitionPhase];
+  if ((phase === 2 || phase === 3) && phase !== acknowledgedPhase) {
+    const t = TRANSITION_MESSAGES[phase];
     if (t) {
       return (
         <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
@@ -214,8 +192,7 @@ function TestPageContent() {
             message={t.message}
             subMessage={t.subMessage}
             onContinue={() => {
-              setMode('phase');
-              setTransitionPhase(null);
+              setAcknowledgedPhase(phase);
             }}
           />
         </main>
@@ -233,6 +210,13 @@ function TestPageContent() {
       <div className="mb-6 w-full max-w-2xl">
         <ProgressBar current={globalCurrent} total={30} label={phaseLabel} />
       </div>
+
+      {phase === 3 && questionIndex === 9 && groupCode && (
+        <label className="mb-5 flex w-full max-w-2xl items-start gap-3 rounded-card border p-4 text-sm leading-6 text-sail-mist" style={{ borderColor: 'rgba(201,162,39,0.2)' }}>
+          <input type="checkbox" checked={shareWithCoach} onChange={event => setShareWithCoach(event.target.checked)} className="mt-1" />
+          <span>이 결과를 입력한 그룹의 담당 코치에게 공유합니다. <span className="text-sail-gold">선택</span><br />동의하지 않아도 진단과 본인 결과 보기는 이용할 수 있습니다. 비회원 공유는 참여 세션 최대 24시간 이내, 로그인한 본인 결과의 공유는 최대 30일입니다. 본인 접근 권한이 유효한 동안 결과 화면에서 철회할 수 있습니다.</span>
+        </label>
+      )}
 
       {/* Phase 컴포넌트 */}
       <div className="flex w-full flex-1 items-start justify-center">

@@ -1,54 +1,53 @@
-/**
- * POST /api/auth/phone-lookup
- *
- * 비로그인 사용자가 /login 화면에서 전화번호 입력 후 "로그인" 클릭 시 호출.
- * 전화번호가 가입돼 있으면 그 사용자의 email을 반환 → 클라이언트가
- * supabase.auth.signInWithPassword({ email, password }) 호출.
- *
- * 가입돼 있지 않으면 exists=false 만 반환 → 클라이언트가 /signup 으로 redirect.
- *
- * 보안:
- *   - email 노출이 약간의 정보 유출이긴 하나, 전화번호는 사용자가 이미 알고
- *     있는 식별자이므로 큰 리스크는 아님.
- *   - rate limit 미적용 (Vercel Edge Middleware에서 추후 보완).
- */
+/** Phone/password login. The internal phone/email mapping never leaves the server. */
+import { randomUUID } from 'node:crypto';
+import type { NextRequest } from 'next/server';
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { phoneLoginCredentials } from '@/lib/phone';
+import { readLimitedJson, requireSameOrigin, ResultSecurityError } from '@/lib/result-security-policy';
+import {
+  capabilityContext, revokeParticipation, securityFailure, securityJson, throttleRequest,
+} from '@/lib/results-security';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 
-import { isValidPhone, normalizePhone } from '@/lib/phone';
-import { createServiceRoleClient } from '@/lib/supabase/server';
+const INVALID_CREDENTIALS = '전화번호 또는 암호를 확인해 주세요.';
 
 export async function POST(request: NextRequest) {
-  let body: { phone?: string };
   try {
-    body = (await request.json()) as { phone?: string };
-  } catch {
-    return NextResponse.json({ error: '잘못된 요청 본문' }, { status: 400 });
+    requireSameOrigin(request);
+    await throttleRequest(request, 'phone-login', null, 10, 600);
+    const credentials = phoneLoginCredentials(await readLimitedJson(request, 4096));
+    if (!credentials) return securityJson({ error: INVALID_CREDENTIALS }, 401);
+
+    const service = createServiceRoleClient();
+    const { data: email, error: lookupError } = await service.rpc(
+      'email_by_phone' as never, { p_phone: credentials.phone } as never,
+    ) as unknown as { data: string | null; error: unknown };
+    if (lookupError) throw new ResultSecurityError(503, '지금 로그인할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+
+    if (!email) {
+      // An unknown identifier still makes an Auth password request. This client
+      // never persists cookies and is discarded after the dummy attempt.
+      await createServiceRoleClient().auth.signInWithPassword({
+        email: `phone-missing-${randomUUID()}@example.invalid`, password: credentials.password,
+      });
+      return securityJson({ error: INVALID_CREDENTIALS }, 401);
+    }
+
+    const previous = await capabilityContext();
+    const client = await createClient();
+    const { data, error } = await client.auth.signInWithPassword({ email, password: credentials.password });
+    if (error || !data.user || !data.session) return securityJson({ error: INVALID_CREDENTIALS }, 401);
+
+    try {
+      // Preserve participation on a failed login; clear old proofs only after
+      // authentication succeeded, using the verified pre-login actor snapshot.
+      await revokeParticipation(previous);
+    } catch (error) {
+      await client.auth.signOut({ scope: 'local' });
+      throw error;
+    }
+    return securityJson({ ok: true });
+  } catch (error) {
+    return securityFailure(error);
   }
-
-  const phone = normalizePhone(body.phone ?? '');
-  if (!isValidPhone(phone)) {
-    return NextResponse.json(
-      { error: '전화번호 형식이 올바르지 않습니다.' },
-      { status: 400 }
-    );
-  }
-
-  const svc = createServiceRoleClient();
-
-  // RPC로 email 조회 (SECURITY DEFINER)
-  const { data: email, error } = (await svc.rpc(
-    'email_by_phone' as never,
-    { p_phone: phone } as never
-  )) as { data: string | null; error: { message: string } | null };
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  if (!email) {
-    return NextResponse.json({ exists: false, phone });
-  }
-
-  return NextResponse.json({ exists: true, email, phone });
 }

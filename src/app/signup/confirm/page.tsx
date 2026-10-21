@@ -3,13 +3,14 @@
  */
 
 import Link from 'next/link';
+import { safeInternalRedirect } from '@/lib/auth-redirect';
 
 export const metadata = {
   title: '이메일을 확인해주세요 · SAIL',
 };
 
 interface PageProps {
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ email?: string; redirect?: string }>;
 }
 
 const META_LABEL = {
@@ -21,7 +22,8 @@ const META_LABEL = {
 };
 
 export default async function ConfirmPage({ searchParams }: PageProps) {
-  const { email } = await searchParams;
+  const { email, redirect } = await searchParams;
+  const destination = safeInternalRedirect(redirect);
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
       <div className="w-full max-w-md text-center">
@@ -92,7 +94,7 @@ export default async function ConfirmPage({ searchParams }: PageProps) {
           입니다.
         </div>
         <Link
-          href="/login"
+          href={`/login?redirect=${encodeURIComponent(destination)}`}
           className="mt-7 inline-block text-sail-gold transition-colors duration-200 hover:text-sail-gold-soft"
           style={{
             fontFamily: 'var(--font-serif)',

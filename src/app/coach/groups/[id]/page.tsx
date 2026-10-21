@@ -12,9 +12,10 @@ import { notFound, redirect } from 'next/navigation';
 import { GroupDetailClient } from '@/components/coach/GroupDetailClient';
 import { InvitationBlock } from '@/components/coach/InvitationBlock';
 import { TypeDistribution } from '@/components/coach/TypeDistribution';
+import { listAuthorizedGroupResults } from '@/lib/results-security';
 import { getAuthContext, hasMinRole } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import type { GroupRow, ResultRow } from '@/types/database';
+import type { GroupRow } from '@/types/database';
 import { SAIL_TYPES, type SailType } from '@/types/sail';
 
 export const dynamic = 'force-dynamic';
@@ -90,17 +91,13 @@ export default async function GroupDetailPage({ params }: PageProps) {
     );
   }
 
-  const [{ data: members }, { data: results }] = await Promise.all([
+  const [{ data: members }, results] = await Promise.all([
     svc
       .from('group_members')
       .select('group_id, user_id, joined_at, users(nickname, email)')
       .eq('group_id', id)
       .order('joined_at', { ascending: false }),
-    svc
-      .from('results')
-      .select('*')
-      .eq('group_id', id)
-      .order('created_at', { ascending: false }),
+    listAuthorizedGroupResults(id),
   ]);
 
   const memberList = (members ?? []) as Array<{
@@ -109,7 +106,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
     joined_at: string;
     users: { nickname: string | null; email: string | null } | null;
   }>;
-  const resultList = (results ?? []) as ResultRow[];
+  const resultList = results;
 
   const typeCounts: Record<SailType, number> = { S: 0, A: 0, I: 0, L: 0 };
   resultList.forEach((r) => {
@@ -169,7 +166,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
             className="mt-2 text-sail-mist"
             style={{ fontSize: 14, lineHeight: 1.7 }}
           >
-            그룹 멤버 {resultList.length}명의 주 유형 분포
+            공유에 동의한 결과 {resultList.length}건의 주 유형 분포
           </p>
           <div className="mt-6">
             <TypeDistribution counts={typeCounts} total={resultList.length} />
@@ -196,7 +193,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
           className="mt-2 text-sail-mist"
           style={{ fontSize: 14, lineHeight: 1.7 }}
         >
-          최신 {Math.min(resultList.length, 100)}건 — 클릭하면 결과 페이지로 이동
+          공유 동의가 유효한 최신 {Math.min(resultList.length, 100)}건 — 클릭하면 결과 페이지로 이동
         </p>
 
         {resultList.length === 0 ? (
@@ -208,7 +205,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
               fontSize: 14,
             }}
           >
-            아직 이 그룹에 들어온 진단 결과가 없습니다. 멤버에게 코드를 공유하세요.
+            현재 열람할 수 있는 공유 동의 결과가 없습니다. 그룹 코드만으로는 결과 공유에 동의한 것으로 처리하지 않습니다.
           </p>
         ) : (
           <div className="mt-6 overflow-x-auto">
