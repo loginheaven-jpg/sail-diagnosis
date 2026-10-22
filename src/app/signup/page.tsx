@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
+import { safeInternalRedirect } from '@/lib/auth-redirect';
 import { formatPhone, isValidPhone, normalizePhone } from '@/lib/phone';
 import { createClient } from '@/lib/supabase/client';
 
@@ -64,7 +65,7 @@ function SignupPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefilledPhone = normalizePhone(searchParams.get('phone') ?? '');
-  const redirect = searchParams.get('redirect') ?? '/';
+  const redirect = safeInternalRedirect(searchParams.get('redirect'));
 
   const [fullName, setFullName] = useState('');
   const [phoneDisplay, setPhoneDisplay] = useState(formatPhone(prefilledPhone));
@@ -113,21 +114,8 @@ function SignupPageContent() {
 
     setBusy(true);
 
-    try {
-      const lookup = await fetch('/api/auth/phone-lookup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      });
-      const j = (await lookup.json()) as { exists?: boolean };
-      if (j.exists) {
-        setError('이미 가입된 전화번호입니다. 로그인 화면에서 시도해주세요.');
-        setBusy(false);
-        return;
-      }
-    } catch {
-      /* lookup 실패는 무시하고 가입 시도 */
-    }
+    // Phone uniqueness is enforced at the final Auth/profile transaction.
+    // Do not expose a public account/phone availability oracle before signup.
 
     const callbackUrl =
       typeof window !== 'undefined'
@@ -138,11 +126,11 @@ function SignupPageContent() {
       password,
       options: {
         emailRedirectTo: callbackUrl,
-        data: { full_name: fn, phone },
+        data: { name: fn, full_name: fn, phone },
       },
     });
     if (signUpErr) {
-      setError(`가입 실패: ${signUpErr.message}`);
+      setError('가입을 완료하지 못했습니다. 입력 내용을 확인하거나 기존 계정으로 로그인해 주세요.');
       setBusy(false);
       return;
     }
@@ -182,7 +170,7 @@ function SignupPageContent() {
 
     setError(null);
     router.replace(
-      `/signup/confirm?email=${encodeURIComponent(em)}&redirect=${encodeURIComponent(redirect)}`
+      `/signup/confirm?redirect=${encodeURIComponent(redirect)}`
     );
   };
 

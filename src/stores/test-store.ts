@@ -35,6 +35,9 @@ interface TestState {
   groupCode: string | null;
   isStarted: boolean;
   isCompleted: boolean;
+  /** One server idempotency key survives refresh until this attempt is reset. */
+  requestId: string | null;
+  shareWithCoach: boolean;
 
   // 응답
   answers: AnswerRecord;
@@ -45,6 +48,7 @@ interface TestState {
   // === 액션 ===
   setNickname: (name: string) => void;
   setGroupCode: (code: string | null) => void;
+  setShareWithCoach: (consent: boolean) => void;
   startTest: () => void;
   answerQuestion: (questionId: string, answer: AnswerValue) => void;
   nextQuestion: () => void;
@@ -62,6 +66,8 @@ const initialState = {
   groupCode: null,
   isStarted: false,
   isCompleted: false,
+  requestId: null as string | null,
+  shareWithCoach: false,
   answers: {} as AnswerRecord,
   result: null,
 };
@@ -73,9 +79,12 @@ export const useTestStore = create<TestState>()(
 
       setNickname: (name) => set({ nickname: name }),
       setGroupCode: (code) => set({ groupCode: code }),
+      setShareWithCoach: (consent) => {
+        if (!get().isCompleted) set({ shareWithCoach: consent === true });
+      },
 
       startTest: () =>
-        set({ isStarted: true, isCompleted: false, phase: 1, questionIndex: 0, result: null }),
+        set({ isStarted: true, isCompleted: false, phase: 1, questionIndex: 0, answers: {}, result: null, requestId: crypto.randomUUID(), shareWithCoach: false }),
 
       answerQuestion: (questionId, answer) => {
         set((state) => ({
@@ -96,7 +105,7 @@ export const useTestStore = create<TestState>()(
           set({ phase: (phase + 1) as Phase, questionIndex: 0 });
         } else {
           const result = get().calculateResult();
-          set({ isCompleted: true, result });
+          set({ isCompleted: true, result, requestId: get().requestId ?? crypto.randomUUID() });
         }
       },
 
@@ -124,6 +133,23 @@ export const useTestStore = create<TestState>()(
         }
         return localStorage;
       }),
+      merge: (persistedState, currentState) => {
+        const restored = { ...currentState, ...(persistedState as Partial<TestState>) };
+        restored.requestId = typeof restored.requestId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(restored.requestId)
+          ? restored.requestId : null;
+        restored.shareWithCoach = restored.shareWithCoach === true;
+        // An old completed draft has no reusable key: its previous save may
+        // already have committed. Preserve answers, require final confirmation,
+        // and never silently replay it under a new key or inferred consent.
+        if (restored.isCompleted && !restored.requestId) {
+          restored.isCompleted = false;
+          restored.phase = 3;
+          restored.questionIndex = 9;
+          restored.result = null;
+          restored.shareWithCoach = false;
+        }
+        return restored;
+      },
       // 완료 후 결과 객체까지 persist (새로고침해도 결과 유지)
       partialize: (state) => ({
         phase: state.phase,
@@ -132,6 +158,8 @@ export const useTestStore = create<TestState>()(
         groupCode: state.groupCode,
         isStarted: state.isStarted,
         isCompleted: state.isCompleted,
+        requestId: state.requestId,
+        shareWithCoach: state.shareWithCoach,
         answers: state.answers,
         result: state.result,
       }),

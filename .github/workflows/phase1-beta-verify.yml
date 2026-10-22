@@ -1,0 +1,56 @@
+name: Phase 1 beta verify (no production access)
+
+on:
+  push:
+    branches:
+      - codex/phase1-results-security
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Typecheck the full SAIL app
+        run: npx tsc --noEmit
+      - name: Run pure policy, Auth and routing tests
+        run: |
+          node --test \
+            tests/result-security-policy.test.mjs \
+            tests/auth-redirect.test.mjs \
+            tests/auth-redirect-phone.test.mjs \
+            tests/diagnosis-progress.test.mjs \
+            tests/user-profile.test.mjs
+      - name: Install isolated PGlite test dependency
+        env:
+          PGLITE_FOLDER: ${{ runner.temp }}/sail-pglite
+        run: |
+          mkdir -p "$PGLITE_FOLDER"
+          npm install --prefix "$PGLITE_FOLDER" --no-save --ignore-scripts @electric-sql/pglite@0.3.14
+      - name: Verify old security migration and additional member-only migration
+        env:
+          SAIL_PGLITE_MODULE: ${{ runner.temp }}/sail-pglite/node_modules/@electric-sql/pglite/dist/index.js
+        run: |
+          node tests/test_results_security_db.mjs
+          node tests/test_login_required_db.mjs
+      - name: Build production bundle with nonproduction placeholder public configuration
+        # This build only prerenders UI. Values must never point to the live project.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-only.invalid
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder_not_a_real_key
+          SAIL_APP_ORIGIN: https://ci-only.invalid
+        run: npm run build

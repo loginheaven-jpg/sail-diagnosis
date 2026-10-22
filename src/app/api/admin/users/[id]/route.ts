@@ -8,6 +8,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { getAuthContext } from '@/lib/supabase/auth';
+import { isSameOriginMutation } from '@/lib/result-security-policy';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import type { UserRole } from '@/types/database';
 
@@ -22,6 +23,9 @@ export async function PATCH(
   request: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: '요청 출처를 확인해 주세요.' }, { status: 403 });
+  }
   const { id } = await ctx.params;
   if (!UUID_REGEX.test(id)) {
     return NextResponse.json({ error: '잘못된 ID' }, { status: 400 });
@@ -38,7 +42,9 @@ export async function PATCH(
   } catch {
     return NextResponse.json({ error: '잘못된 요청 본문' }, { status: 400 });
   }
-  if (!body.role || !['user', 'coach', 'admin'].includes(body.role)) {
+  if (!body || typeof body !== 'object' || Array.isArray(body) ||
+      Object.keys(body).some(key => key !== 'role') ||
+      !body.role || !['user', 'coach', 'admin'].includes(body.role)) {
     return NextResponse.json(
       { error: 'role은 user|coach|admin 중 하나여야 합니다.' },
       { status: 400 }

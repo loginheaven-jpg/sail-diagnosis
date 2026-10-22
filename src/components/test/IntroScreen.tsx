@@ -9,7 +9,7 @@
  * - 진단 시작 버튼
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useTestStore } from '@/stores/test-store';
 import {
@@ -44,51 +44,47 @@ export function IntroScreen({ prefilledGroupCode }: IntroScreenProps) {
   const [groupCodeInput, setGroupCodeInputLocal] = useState(
     prefilledGroupCode ? normalizeGroupCode(prefilledGroupCode) : ''
   );
-  const [groupPreview, setGroupPreview] = useState<GroupPreview>({ state: 'idle' });
+  const [checkedGroup, setCheckedGroup] = useState<{
+    code: string;
+    preview: GroupPreview;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const lastCheckRef = useRef<string>('');
+  const code = normalizeGroupCode(groupCodeInput);
+  const groupPreview: GroupPreview = code.length === 0
+    ? { state: 'idle' }
+    : !GROUP_CODE_REGEX.test(code)
+      ? { state: 'invalid', message: `${GROUP_CODE_LENGTH}자리 영숫자 (혼동 글자 0/O/1/I/L 제외)` }
+      : checkedGroup?.code === code
+        ? checkedGroup.preview
+        : { state: 'checking' };
+
   useEffect(() => {
-    const code = normalizeGroupCode(groupCodeInput);
-    if (code.length === 0) {
-      setGroupPreview({ state: 'idle' });
-      return;
-    }
-    if (!GROUP_CODE_REGEX.test(code)) {
-      setGroupPreview({
-        state: 'invalid',
-        message: `${GROUP_CODE_LENGTH}자리 영숫자 (혼동 글자 0/O/1/I/L 제외)`,
-      });
-      return;
-    }
-    setGroupPreview({ state: 'checking' });
-    lastCheckRef.current = code;
+    if (!GROUP_CODE_REGEX.test(code)) return;
+    let active = true;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
           `/api/groups/lookup?code=${encodeURIComponent(code)}`,
-          { cache: 'no-store' }
+          { cache: 'no-store', signal: controller.signal }
         );
-        if (lastCheckRef.current !== code) return;
         if (res.ok) {
           const json = (await res.json()) as { name: string };
-          setGroupPreview({ state: 'found', name: json.name });
-        } else {
-          setGroupPreview({
-            state: 'not-found',
-            message: '존재하지 않거나 만료된 코드입니다.',
-          });
+          if (active) setCheckedGroup({ code, preview: { state: 'found', name: json.name } });
+        } else if (active) {
+          setCheckedGroup({ code, preview: { state: 'not-found', message: '존재하지 않거나 만료된 코드입니다.' } });
         }
       } catch {
-        if (lastCheckRef.current !== code) return;
-        setGroupPreview({
-          state: 'not-found',
-          message: '코드 확인 중 오류가 발생했습니다.',
-        });
+        if (active) setCheckedGroup({ code, preview: { state: 'not-found', message: '코드 확인 중 오류가 발생했습니다.' } });
       }
     }, 400);
-    return () => clearTimeout(timer);
-  }, [groupCodeInput]);
+    return () => {
+      active = false;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [code]);
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,7 +255,7 @@ export function IntroScreen({ prefilledGroupCode }: IntroScreenProps) {
             <div className="mt-2 min-h-[18px]" style={{ fontSize: 12 }}>
               {groupPreview.state === 'idle' && (
                 <span className="text-sail-mist/70">
-                  코드를 비워두면 결과는 관리자의 일반 그룹에 자동 귀속됩니다.
+                  그룹 코드는 선택입니다. 코드 입력만으로 코치에게 결과가 공개되지 않습니다.
                 </span>
               )}
               {groupPreview.state === 'invalid' && (
@@ -270,7 +266,7 @@ export function IntroScreen({ prefilledGroupCode }: IntroScreenProps) {
               )}
               {groupPreview.state === 'found' && (
                 <span className="text-sail-success">
-                  ✦ &lsquo;{groupPreview.name}&rsquo; 그룹에 결과를 보냅니다.
+                  ✦ &lsquo;{groupPreview.name}&rsquo; 그룹에 연결합니다. 결과 공유는 마지막 문항에서 별도로 선택합니다.
                 </span>
               )}
               {groupPreview.state === 'not-found' && (
@@ -314,9 +310,9 @@ export function IntroScreen({ prefilledGroupCode }: IntroScreenProps) {
           className="rise-6 mt-10 text-center text-sail-mist/60"
           style={{ fontSize: 12, letterSpacing: '0.04em', lineHeight: 1.8 }}
         >
-          개인을 식별할 수 있는 정보는 저장하지 않습니다.
+          입력한 별칭과 응답은 결과 생성을 위해 서버에 저장됩니다.
           <br />
-          응답 데이터는 진단 결과 생성과 통계 목적으로만 사용됩니다.
+          로그인한 결과는 계정에 연결되며, 비회원은 이 브라우저의 참여 세션으로 확인합니다. 코치 공유와 링크 공유는 별도로 선택합니다.
         </p>
       </div>
     </main>

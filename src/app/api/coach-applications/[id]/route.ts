@@ -8,6 +8,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { getAuthContext } from '@/lib/supabase/auth';
+import { isSameOriginMutation } from '@/lib/result-security-policy';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import type { CoachApplicationRow } from '@/types/database';
 
@@ -22,6 +23,9 @@ export async function PATCH(
   request: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: '요청 출처를 확인해 주세요.' }, { status: 403 });
+  }
   const { id } = await ctx.params;
   if (!UUID_REGEX.test(id)) {
     return NextResponse.json({ error: '잘못된 ID' }, { status: 400 });

@@ -11,7 +11,7 @@ import { formatPhone } from '@/lib/phone';
 import type {
   CoachApplicationRow,
   UserRole,
-  UserRow,
+  UserProfile as UserRow,
 } from '@/types/database';
 
 interface PendingApp extends CoachApplicationRow {

@@ -15,6 +15,7 @@ interface Props {
   group: GroupRow;
   memberCount: number;
   resultCount: number;
+  isExpired: boolean;
 }
 
 // 로컬 state를 두지 않는다 — PATCH 후 router.refresh()로
@@ -34,6 +35,7 @@ export function GroupDetailClient({
   group,
   memberCount,
   resultCount,
+  isExpired,
 }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -41,9 +43,6 @@ export function GroupDetailClient({
   const [copied, setCopied] = useState(false);
 
   const isArchived = group.status === 'archived';
-  const isExpired =
-    group.expires_at && new Date(group.expires_at).getTime() < Date.now();
-
   const patch = async (body: Record<string, unknown>, busyKey: string) => {
     setBusy(busyKey);
     setError(null);
@@ -181,7 +180,7 @@ export function GroupDetailClient({
               letterSpacing: '0.1em',
             }}
           >
-            멤버 {memberCount}명 · 결과 {resultCount}건 · 정원 {group.max_members}
+            멤버 {memberCount}명 · 공유 동의 결과 {resultCount}건 · 정원 {group.max_members}
             {group.expires_at && (
               <>
                 {' · '}
@@ -330,7 +329,7 @@ export function GroupDetailClient({
         >
           {group.code}
         </span>
-        를 입력하면 결과가 이 그룹으로 모입니다.
+        를 입력해 참여할 수 있습니다. 결과는 참여자가 코치 공유에 별도로 동의한 경우에만 열람할 수 있습니다.
       </p>
     </section>
   );

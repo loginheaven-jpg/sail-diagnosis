@@ -45,8 +45,8 @@ export function InvitationBlock({ group }: Props) {
 또는 ${origin}/test 에 접속해 코드 ${group.code} 를 입력하세요.
 
 · 30문항 7~9분 소요
-· 결과는 영구 URL로 받습니다
-· 결과는 ${group.name} 그룹에 연결되어 코치가 함께 확인합니다`;
+· 본인 참여 세션 또는 로그인 계정으로 결과를 확인합니다
+· 코치 공유에 별도로 동의한 결과만 담당 코치가 확인합니다`;
 
   const copy = async (key: string, text: string) => {
     try {

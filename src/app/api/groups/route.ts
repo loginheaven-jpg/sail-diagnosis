@@ -11,6 +11,8 @@ import { getAuthContext, hasMinRole } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import type { GroupInsert, GroupRow } from '@/types/database';
 import { GROUP_CODE_REGEX, generateGroupCode } from '@/types/sail';
+import { groupMutationInput, readLimitedJson, requireSameOrigin, ResultSecurityError } from '@/lib/result-security-policy';
+import { securityFailure, securityJson, throttleRequest } from '@/lib/results-security';
 
 const MAX_CODE_RETRIES = 5;
 
@@ -38,94 +40,31 @@ export async function GET() {
   return NextResponse.json({ groups: (data ?? []) as GroupRow[] });
 }
 
-interface CreateGroupPayload {
-  name?: string;
-  description?: string | null;
-  maxMembers?: number;
-  expiresAt?: string | null;
-}
-
 export async function POST(request: NextRequest) {
-  const auth = await getAuthContext();
-  if (!auth) {
-    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
-  }
-  if (!hasMinRole(auth.role, 'coach')) {
-    return NextResponse.json(
-      { error: '코치 권한이 필요합니다.' },
-      { status: 403 }
-    );
-  }
-
-  let body: CreateGroupPayload;
   try {
-    body = (await request.json()) as CreateGroupPayload;
-  } catch {
-    return NextResponse.json({ error: '잘못된 요청 본문' }, { status: 400 });
-  }
-
-  const name = body.name?.trim();
-  if (!name || name.length < 2 || name.length > 50) {
-    return NextResponse.json(
-      { error: '그룹 이름은 2~50자여야 합니다.' },
-      { status: 400 }
-    );
-  }
-  const description = body.description?.trim().slice(0, 500) ?? null;
-  const maxMembers =
-    typeof body.maxMembers === 'number' &&
-    body.maxMembers >= 1 &&
-    body.maxMembers <= 1000
-      ? body.maxMembers
-      : 100;
-  const expiresAt =
-    typeof body.expiresAt === 'string' && body.expiresAt.length > 0
-      ? body.expiresAt
-      : null;
-
-  const svc = createServiceRoleClient();
-
-  // 코드 충돌 회피 — 최대 5회 retry
-  let createdGroup: GroupRow | null = null;
-  let lastError: string | null = null;
-  for (let attempt = 0; attempt < MAX_CODE_RETRIES; attempt++) {
-    const code = generateGroupCode();
-    if (!GROUP_CODE_REGEX.test(code)) continue;
-
-    const payload: GroupInsert = {
-      coach_id: auth.userId,
-      name,
-      description,
-      code,
-      max_members: maxMembers,
-      expires_at: expiresAt,
-    };
-    const { data, error } = await svc
-      .from('groups')
-      .insert(payload as never)
-      .select('*')
-      .single<GroupRow>();
-
-    if (!error && data) {
-      createdGroup = data;
-      break;
+    requireSameOrigin(request);
+    const auth = await getAuthContext();
+    if (!auth) return securityJson({ error: '로그인이 필요합니다.' }, 401);
+    if (!hasMinRole(auth.role, 'coach')) return securityJson({ error: '코치 권한이 필요합니다.' }, 403);
+    await throttleRequest(request, 'group-create', auth.userId, 20, 600);
+    const { rotateCode: _rotateCode, ...input } = groupMutationInput(await readLimitedJson(request, 4096), true);
+    void _rotateCode;
+    const svc = createServiceRoleClient();
+    for (let attempt = 0; attempt < MAX_CODE_RETRIES; attempt++) {
+      const code = generateGroupCode();
+      if (!GROUP_CODE_REGEX.test(code)) continue;
+      const payload: GroupInsert = {
+        coach_id: auth.userId,
+        name: input.name!,
+        description: input.description ?? null,
+        max_members: input.max_members ?? 100,
+        expires_at: input.expires_at ?? null,
+        code,
+      };
+      const { data, error } = await svc.from('groups').insert(payload as never).select('*').single<GroupRow>();
+      if (!error && data) return securityJson({ group: data }, 201);
+      if (error?.code !== '23505') throw new ResultSecurityError(503, '그룹을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
     }
-    if (error?.code === '23505' /* unique violation */) {
-      lastError = `코드 충돌 (재시도 ${attempt + 1}/${MAX_CODE_RETRIES})`;
-      continue;
-    }
-    return NextResponse.json(
-      { error: error?.message ?? '그룹 생성 실패' },
-      { status: 500 }
-    );
-  }
-
-  if (!createdGroup) {
-    return NextResponse.json(
-      { error: lastError ?? '그룹 코드 생성에 반복 실패했습니다.' },
-      { status: 500 }
-    );
-  }
-
-  return NextResponse.json({ group: createdGroup }, { status: 201 });
+    throw new ResultSecurityError(503, '그룹 코드를 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+  } catch (error) { return securityFailure(error); }
 }

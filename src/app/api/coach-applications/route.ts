@@ -8,6 +8,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { getAuthContext } from '@/lib/supabase/auth';
+import { isSameOriginMutation } from '@/lib/result-security-policy';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import type {
   CoachApplicationInsert,
@@ -19,6 +20,9 @@ interface CreatePayload {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: '요청 출처를 확인해 주세요.' }, { status: 403 });
+  }
   const auth = await getAuthContext();
   if (!auth) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });

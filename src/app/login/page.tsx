@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
 import { Button } from '@/components/ui/Button';
+import { safeInternalRedirect } from '@/lib/auth-redirect';
 import { formatPhone, normalizePhone } from '@/lib/phone';
 import { createClient } from '@/lib/supabase/client';
 
@@ -55,7 +56,7 @@ function LoadingFallback() {
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') ?? '/';
+  const redirect = safeInternalRedirect(searchParams.get('redirect'));
   const initialError = searchParams.get('error');
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
@@ -106,37 +107,18 @@ function LoginPageContent() {
       const res = await fetch('/api/auth/phone-lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        credentials: 'same-origin',
+        cache: 'no-store',
+        body: JSON.stringify({ phone, password }),
       });
-      const json = (await res.json()) as {
-        exists?: boolean;
-        email?: string;
-        phone?: string;
-        error?: string;
-      };
-      if (!res.ok) {
-        setError(json.error ?? '조회 실패');
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !json.ok) {
+        setError(json.error ?? '전화번호 또는 암호를 확인해 주세요.');
+        setNeedReset(res.status === 401);
         setBusy(null);
         return;
       }
-
-      if (!json.exists) {
-        router.push(
-          `/signup?phone=${encodeURIComponent(phone)}&redirect=${encodeURIComponent(redirect)}`
-        );
-        return;
-      }
-
-      const { error: signInErr } = await supabase.auth.signInWithPassword({
-        email: json.email!,
-        password,
-      });
-      if (signInErr) {
-        setError('암호가 일치하지 않습니다.');
-        setNeedReset(true);
-        setBusy(null);
-        return;
-      }
+      setPassword('');
       if (redirect && redirect !== '/') {
         router.replace(redirect);
       } else {
@@ -253,7 +235,7 @@ function LoginPageContent() {
             />
           </div>
           <Button type="submit" size="lg" fullWidth disabled={busy !== null}>
-            {busy === 'phone' ? '확인 중…' : '로그인 / 가입 시작'}
+            {busy === 'phone' ? '확인 중…' : '로그인'}
           </Button>
           <p
             className="text-center text-sail-mist/70"
@@ -264,7 +246,7 @@ function LoginPageContent() {
               lineHeight: 1.6,
             }}
           >
-            가입돼 있지 않으면 자동으로 가입 화면으로 이동합니다
+            처음 이용하신다면 아래 회원 가입을 선택해 주세요.
           </p>
         </form>
 
@@ -344,8 +326,7 @@ function LoginPageContent() {
             </Link>
           </div>
           <div className="text-sail-mist/70" style={{ fontSize: 12 }}>
-            처음이시면 위에서 바로 전화번호·암호를 입력하세요. <br />
-            카카오/구글로 시작해도 됩니다.
+            <Link href={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-sail-gold underline">회원 가입</Link><br />카카오/구글로 시작해도 됩니다.
           </div>
         </div>
       </div>

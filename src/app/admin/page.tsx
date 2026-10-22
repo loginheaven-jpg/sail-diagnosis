@@ -1,7 +1,7 @@
 /**
  * /admin — 슈퍼어드민 대시보드 (Server Component, Quiet Luxury v2.0)
  *
- * - 전체 통계 (사용자/그룹/결과 수)
+ * - 관리 통계 (사용자/그룹/내 운영 그룹 수), 결과 전체 집계는 제공하지 않음
  * - 코치 신청 대기 목록 (승인·거부)
  * - 사용자 목록 (검색 + 역할 변경)
  */
@@ -12,15 +12,17 @@ import { redirect } from 'next/navigation';
 import { AdminClient } from '@/components/admin/AdminClient';
 import { getAuthContext } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { toUserProfile } from '@/lib/user-profile';
 import type {
   CoachApplicationRow,
   UserRow,
+  UserProfile,
 } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
 
 interface PendingApplication extends CoachApplicationRow {
-  user: Pick<UserRow, 'full_name' | 'nickname' | 'email' | 'phone'> | null;
+  user: Pick<UserProfile, 'full_name' | 'nickname' | 'email' | 'phone'> | null;
 }
 
 const META_LABEL = {
@@ -38,21 +40,20 @@ export default async function AdminPage() {
 
   const svc = createServiceRoleClient();
 
-  const [usersCount, groupsCount, resultsCount, pendingApps, recentUsers, myGroups] =
+  const [usersCount, groupsCount, pendingApps, recentUsers, myGroups] =
     await Promise.all([
       svc.from('users').select('id', { count: 'exact', head: true }),
       svc.from('groups').select('id', { count: 'exact', head: true }),
-      svc.from('results').select('id', { count: 'exact', head: true }),
       svc
         .from('coach_applications')
         .select(
-          '*, user:users!coach_applications_user_id_fkey(full_name, nickname, email, phone)'
+          '*, user:users!coach_applications_user_id_fkey(full_name:name, nickname, email, phone)'
         )
         .eq('status', 'pending')
         .order('created_at', { ascending: false }),
       svc
         .from('users')
-        .select('id, full_name, nickname, email, phone, role, created_at')
+        .select('id, name, nickname, email, phone, role, created_at, updated_at')
         .order('created_at', { ascending: false })
         .limit(50),
       svc
@@ -64,7 +65,7 @@ export default async function AdminPage() {
   const stats = {
     users: usersCount.count ?? 0,
     groups: groupsCount.count ?? 0,
-    results: resultsCount.count ?? 0,
+    ownedGroups: myGroups.count ?? 0,
   };
 
   return (
@@ -90,7 +91,7 @@ export default async function AdminPage() {
       <section className="grid gap-4 sm:grid-cols-3">
         <StatCard label="전체 사용자" value={stats.users} />
         <StatCard label="전체 그룹" value={stats.groups} />
-        <StatCard label="누적 진단 결과" value={stats.results} />
+        <StatCard label="내 운영 그룹" value={stats.ownedGroups} />
       </section>
 
       {/* 관리자도 그룹을 만들 수 있다는 안내 + 진입로 */}
@@ -155,7 +156,7 @@ export default async function AdminPage() {
 
       <AdminClient
         initialPendingApps={(pendingApps.data ?? []) as PendingApplication[]}
-        initialUsers={(recentUsers.data ?? []) as UserRow[]}
+        initialUsers={((recentUsers.data ?? []) as UserRow[]).map(toUserProfile)}
       />
     </main>
   );

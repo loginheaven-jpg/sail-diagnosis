@@ -28,55 +28,36 @@ import { ProfileDetail } from '@/components/result/ProfileDetail';
 import { ShareCard } from '@/components/result/ShareCard';
 import { TypeCard } from '@/components/result/TypeCard';
 import { VersatilityCard } from '@/components/result/VersatilityCard';
-import { createClient } from '@/lib/supabase/server';
+import { actorUserId, getAuthorizedResult } from '@/lib/results-security';
+import { ShareTokenExchange } from '@/components/result/ShareTokenExchange';
 import { diagnose } from '@/lib/scoring/gaussian';
-import { SAIL_TYPES, type SailType } from '@/types/sail';
-import type { ResultRow } from '@/types/database';
+import type { SailType } from '@/types/sail';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-async function fetchResult(id: string): Promise<ResultRow | null> {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('results')
-    .select('*')
-    .eq('id', id)
-    .single();
-  if (error || !data) return null;
-  return data as ResultRow;
-}
-
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  const result = await fetchResult(id);
-  if (!result) {
-    return { title: '결과를 찾을 수 없습니다 · SAIL' };
-  }
-  const type = result.dominant_type;
-  const info = SAIL_TYPES[type];
-  const title = `${result.nickname ? `${result.nickname}님은 ` : ''}${info.emoji} ${info.koreanName}(${type}형) · SAIL 소통 스타일`;
-  const desc = `${info.tagline} — Merrill-Reid Social Styles 기반 소통 스타일 진단 결과.`;
-  return {
-    title,
-    description: desc,
-    openGraph: {
-      title,
-      description: desc,
-      type: 'website',
-    },
-  };
-}
+// Metadata never queries a private result or includes nickname, score or type.
+export const metadata: Metadata = {
+  title: 'SAIL 진단 결과',
+  description: '권한이 확인된 참여자만 진단 결과를 볼 수 있습니다.',
+  robots: { index: false, follow: false, nocache: true },
+  referrer: 'no-referrer',
+  openGraph: { title: 'SAIL 진단 결과', description: '권한이 필요한 비공개 결과입니다.' },
+};
 
 export default async function ResultPage({ params }: PageProps) {
   const { id } = await params;
-  const result = await fetchResult(id);
-
-  if (!result) {
-    notFound();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) notFound();
+  if (!await actorUserId()) {
+    const destination = encodeURIComponent(`/result/${id}`);
+    return <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16"><section className="rounded-modal border border-sail-gold/20 p-8"><h1 className="font-serif text-2xl text-sail-paper">로그인이 필요합니다</h1><p className="mt-4 text-sm leading-7 text-sail-mist">내 진단 결과와 동의받은 공유 결과는 로그인 회원만 열람할 수 있습니다. 공유 링크로 오셨다면 로그인 후 원래 공유 링크를 다시 열어 주세요.</p><Link href={`/login?redirect=${destination}`} className="mt-6 inline-block text-sm text-sail-gold underline">로그인하고 결과 확인하기</Link></section></main>;
   }
+  const result = await getAuthorizedResult(id);
+
+  if (!result) return <ShareTokenExchange resultId={id} />;
 
   const dominantType = result.dominant_type as SailType;
   // 라벨은 저장돼 있지 않으므로 클라이언트와 동일한 규칙으로 재생성
@@ -152,6 +133,9 @@ export default async function ResultPage({ params }: PageProps) {
         resultId={result.id}
         dominantType={dominantType}
         nickname={result.nickname}
+        canManage={result.can_manage}
+        coachConsent={result.coach_consent}
+        canShareWithCoach={result.can_share_with_coach}
       />
 
       {/* 일관성 경고 (해당 시만) */}

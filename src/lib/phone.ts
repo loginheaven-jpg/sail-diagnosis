@@ -37,3 +37,13 @@ export function isValidPhone(normalized: string): boolean {
   if (!normalized) return false;
   return /^[0-9]{8,15}$/.test(normalized);
 }
+
+/** A credential submission is never a public phone/email availability lookup. */
+export function phoneLoginCredentials(value: unknown): { phone: string; password: string } | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const body = value as Record<string, unknown>;
+  if (Object.keys(body).length !== 2 || Object.keys(body).some(key => !['phone', 'password'].includes(key))) return null;
+  if (typeof body.phone !== 'string' || body.phone.length > 64 || typeof body.password !== 'string' || body.password.length < 1 || body.password.length > 1024) return null;
+  const phone = normalizePhone(body.phone);
+  return isValidPhone(phone) ? { phone, password: body.password } : null;
+}

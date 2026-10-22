@@ -8,9 +8,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { isValidPhone, normalizePhone } from '@/lib/phone';
+import { isSameOriginMutation } from '@/lib/result-security-policy';
 import { getAuthContext } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import type { UserRow } from '@/types/database';
+import { toUserProfile } from '@/lib/user-profile';
+import type { Database, UserRow } from '@/types/database';
 
 export async function GET() {
   const auth = await getAuthContext();
@@ -20,16 +22,16 @@ export async function GET() {
   const svc = createServiceRoleClient();
   const { data, error } = await svc
     .from('users')
-    .select('*')
+    .select('id, name, nickname, phone, email, role, created_at, updated_at')
     .eq('id', auth.userId)
     .single<UserRow>();
   if (error || !data) {
     return NextResponse.json(
-      { error: error?.message ?? 'not found' },
+      { error: '회원 정보를 확인하지 못했습니다.' },
       { status: 404 }
     );
   }
-  return NextResponse.json({ user: data });
+  return NextResponse.json({ user: toUserProfile(data) });
 }
 
 interface PatchPayload {
@@ -39,6 +41,9 @@ interface PatchPayload {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!isSameOriginMutation(request)) {
+    return NextResponse.json({ error: '요청 출처를 확인해 주세요.' }, { status: 403 });
+  }
   const auth = await getAuthContext();
   if (!auth) {
     return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
@@ -51,7 +56,13 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: '잘못된 요청 본문' }, { status: 400 });
   }
 
-  const update: PatchPayload = {};
+  if (!body || typeof body !== 'object' || Array.isArray(body) ||
+      Object.keys(body).some(key => !['full_name', 'phone', 'nickname'].includes(key)) ||
+      Object.values(body).some(value => typeof value !== 'string')) {
+    return NextResponse.json({ error: '이름·전화번호·닉네임만 변경할 수 있습니다.' }, { status: 400 });
+  }
+
+  const update: Database['public']['Tables']['users']['Update'] = {};
   if (typeof body.full_name === 'string') {
     const v = body.full_name.trim();
     if (v.length < 1 || v.length > 50) {
@@ -60,7 +71,7 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
-    update.full_name = v;
+    update.name = v;
   }
   if (typeof body.nickname === 'string') {
     const v = body.nickname.trim();
@@ -109,10 +120,10 @@ export async function PATCH(request: NextRequest) {
     .from('users')
     .update(update as never)
     .eq('id', auth.userId)
-    .select('*')
+    .select('id, name, nickname, phone, email, role, created_at, updated_at')
     .single<UserRow>();
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error || !data) {
+    return NextResponse.json({ error: '회원 정보를 저장하지 못했습니다.' }, { status: 500 });
   }
-  return NextResponse.json({ user: data });
+  return NextResponse.json({ user: toUserProfile(data) });
 }

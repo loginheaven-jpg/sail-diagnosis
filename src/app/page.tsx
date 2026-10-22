@@ -279,24 +279,24 @@ export default async function Home() {
             title="진단을 받는 사람"
             description="조직 구성원·팀원·교회 봉사자. 자신의 소통 스타일을 진단하고 효과적인 소통법을 익힙니다."
             steps={[
-              '진단 시작 (가입 없이 가능)',
+              '로그인 후 진단 시작',
               '코치에게 받은 5자리 코드 입력 (선택)',
               '30문항 응답 → 결과 리포트',
               '소통 가이드·매칭표 참고',
             ]}
             ctaLabel={auth?.role === 'user' ? '진단하기' : '진단 시작'}
-            ctaHref="/test"
+            ctaHref={auth ? "/test" : "/login?redirect=%2Ftest"}
             highlight
           />
           <RoleCard
             badge="코치"
             title="진단을 활용하는 사람"
-            description="진단을 실시하는 코치·퍼실리테이터·HR. 그룹의 결과를 한눈에 보고 워크숍·코칭에 활용합니다."
+            description="진단을 실시하는 코치·퍼실리테이터·HR. 별도 공유 동의가 있는 그룹 결과를 확인해 워크숍·코칭에 활용합니다."
             steps={[
               '가입 후 코치 권한 신청',
               '관리자 승인 → 코치 권한 부여',
               '그룹 생성 → 5자리 코드 발급',
-              '멤버에게 코드 공유 → 결과 모니터링',
+              '멤버에게 코드 공유 → 동의한 결과 확인',
             ]}
             ctaLabel={auth ? '코치 권한 신청' : '코치로 시작'}
             ctaHref={auth ? '/coach/apply' : '/login?redirect=/coach/apply'}
