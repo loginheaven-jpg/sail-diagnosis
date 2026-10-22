@@ -157,7 +157,7 @@ export function ShareCard({ resultId, canManage, coachConsent, canShareWithCoach
         className="mt-2 text-sail-mist/80"
         style={{ fontSize: 14, lineHeight: 1.7 }}
       >
-        {canManage ? '공유 링크는 최대 1시간 유효합니다. 본인 접근 권한이 유효한 동안 이 화면에서 링크와 코치 공유를 철회할 수 있습니다. 비회원 본인 접근은 참여 세션 최대 24시간이며, 코치 공유도 세션 만료·철회와 함께 끝납니다. 로그인한 본인 결과의 코치 공유는 최대 30일입니다.' : '공유받은 결과는 다시 공유하거나 접근 권한을 바꿀 수 없습니다.'}
+        {canManage ? '공유 링크는 최대 1시간 유효합니다. 본인 접근 권한이 유효한 동안 이 화면에서 링크와 코치 공유를 철회할 수 있습니다. 결과 조회와 공유 링크 열람에도 로그인이 필요합니다. 본인 결과의 코치 공유는 최대 30일입니다.' : '공유받은 결과는 다시 공유하거나 접근 권한을 바꿀 수 없습니다.'}
       </p>
 
       {canManage && <>
