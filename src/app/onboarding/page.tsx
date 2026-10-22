@@ -8,8 +8,8 @@ import { safeInternalRedirect } from '@/lib/auth-redirect';
 import { OnboardingForm } from '@/components/onboarding/OnboardingForm';
 import { getAuthContext } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import { toUserProfile } from '@/lib/user-profile';
-import type { UserRow } from '@/types/database';
+import { toUserProfile, USER_PROFILE_SELECT } from '@/lib/user-profile';
+import type { UserWithContact } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,9 +32,9 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
   const svc = createServiceRoleClient();
   const { data: row } = await svc
     .from('users')
-    .select('*')
+    .select(USER_PROFILE_SELECT)
     .eq('id', auth.userId)
-    .single<UserRow>();
+    .single<UserWithContact>();
   if (!row) redirect('/login');
   const user = toUserProfile(row);
 

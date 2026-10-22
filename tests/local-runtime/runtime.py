@@ -279,6 +279,8 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
 NOTIFY pgrst,'reload schema';
 """)
 
+    sql((Path(__file__).parent / 'operating-contacts.sql').read_text(encoding='utf-8'))
+
 
 def seed(c):
     accounts = []

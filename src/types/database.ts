@@ -24,7 +24,6 @@ export interface Database {
           id: string;
           nickname: string | null;
           name: string | null;
-          phone: string | null;
           email: string | null;
           role: UserRole;
           created_at: string;
@@ -34,17 +33,21 @@ export interface Database {
           id: string;
           nickname?: string | null;
           name?: string | null;
-          phone?: string | null;
           email?: string | null;
           role?: UserRole;
         };
         Update: {
           nickname?: string | null;
           name?: string | null;
-          phone?: string | null;
           email?: string | null;
           role?: UserRole;
         };
+      };
+
+      user_contacts: {
+        Row: { user_id: string; phone: string | null; updated_at: string };
+        Insert: { user_id: string; phone?: string | null; updated_at?: string };
+        Update: { phone?: string | null; updated_at?: string };
       };
 
       results: {
@@ -193,7 +196,8 @@ export interface Database {
 
 export type UserRow = Database['public']['Tables']['users']['Row'];
 /** Existing display/form contract; the persisted column is public.users.name. */
-export type UserProfile = Omit<UserRow, 'name'> & { full_name: string | null };
+export type UserWithContact = UserRow & { user_contacts?: { phone: string | null } | null };
+export type UserProfile = Omit<UserRow, 'name'> & { full_name: string | null; phone: string | null };
 export type ResultRow = Database['public']['Tables']['results']['Row'];
 export type ResultInsert = Database['public']['Tables']['results']['Insert'];
 

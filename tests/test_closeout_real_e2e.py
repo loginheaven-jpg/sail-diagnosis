@@ -131,7 +131,7 @@ class Runtime:
             status, user = self.auth('POST', 'admin/users', {'email': actor['email'], 'password': actor['password'], 'email_confirm': True, 'user_metadata': {'name': actor['name'], 'full_name': actor['name'], 'phone': actor['phone']}}, service=True)
             require(status in (200, 201) and isinstance(user, dict) and bool(user.get('id')), 'Synthetic local Auth fixture creation failed')
             actor['id'] = user['id']
-            status, _ = self.rest('PATCH', 'users?id=eq.' + actor['id'], {'role': role, 'name': actor['name'], 'nickname': actor['name'], 'phone': actor['phone']}, service=True)
+            status, _ = self.rest('PATCH', 'users?id=eq.' + actor['id'], {'role': role, 'name': actor['name'], 'nickname': actor['name']}, service=True)
             require(status in (200, 204), 'Synthetic local SAIL role fixture failed')
             status, session = self.auth('POST', 'token?grant_type=password', {'email': actor['email'], 'password': actor['password']})
             require(status == 200 and session['user']['id'] == actor['id'], 'Actual local Auth password session failed')

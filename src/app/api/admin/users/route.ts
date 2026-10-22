@@ -8,8 +8,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { getAuthContext } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import { toUserProfile } from '@/lib/user-profile';
-import type { UserRow } from '@/types/database';
+import { toUserProfile, USER_PROFILE_SELECT } from '@/lib/user-profile';
+import type { UserWithContact } from '@/types/database';
 
 const PAGE_SIZE = 50;
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   const svc = createServiceRoleClient();
   let query = svc
     .from('users')
-    .select('id, name, phone, nickname, email, role, created_at, updated_at', {
+    .select(USER_PROFILE_SELECT, {
       count: 'exact',
     })
     .order('created_at', { ascending: false })
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({
-    users: ((data ?? []) as UserRow[]).map(toUserProfile),
+    users: ((data ?? []) as UserWithContact[]).map(toUserProfile),
     total: count ?? 0,
     page,
     pageSize: PAGE_SIZE,
