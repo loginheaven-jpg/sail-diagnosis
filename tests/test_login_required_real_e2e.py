@@ -102,13 +102,29 @@ def member_logout_case(rt):
     page.close()
 
 
+def contact_profile_case(rt):
+    context=rt.sail_login('a');actor=rt.actors['a']
+    rt.db("UPDATE public.user_contacts SET address='synthetic private address',bank_account='synthetic private account' WHERE user_id="+sql_literal(actor['id']))
+    phone='010'+str(secrets.randbelow(10**8)).zfill(8)
+    r=rt.api(context,'PATCH','/api/users/me',{'phone':phone,'full_name':'연락처 검수'})
+    require(r.status==200 and r.json()['user']['phone']==phone,'Profile phone update did not use contact relation')
+    require(rt.db('SELECT phone FROM public.user_contacts WHERE user_id='+sql_literal(actor['id']))==phone,'Phone not stored in operating contact table')
+    require(rt.db("SELECT address||'/'||bank_account FROM public.user_contacts WHERE user_id="+sql_literal(actor['id']))=='synthetic private address/synthetic private account','Contact update erased unrelated private fields')
+    require(not {'address','bank_account','user_contacts'} & r.json()['user'].keys(),'Profile exposed unrelated contact fields')
+    actor['phone']=phone
+    admin=rt.sail_login('admin');r=rt.api(admin,'GET','/api/admin/users')
+    require(r.status==200 and any(u['id']==actor['id'] and u['phone']==phone for u in r.json()['users']),'Administrator profile list failed operating contact join')
+    require(rt.api(context,'GET','/api/admin/users').status==403,'Member can list all contact profiles')
+    require(rt.db("SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='phone'")=='0','Fixture still contains obsolete users.phone')
+
+
 def main():
     rt=Runtime()
     baseline=rt.db("SELECT md5(string_agg(to_jsonb(r)::text,',' ORDER BY id)) FROM public.results r WHERE user_id IS NULL")
     with sync_playwright() as p:
         rt.browser=p.chromium.launch()
         rt.prepare()
-        cases=[('B01 anonymous UI, session, diagnosis and sharing denied',anonymous_denied_case),('B02 actual signup and canonical profile',signup_case),('B03 actual Auth refresh, role and cookies',auth_case),('B04 member thirty-question save, refresh and relogin',member_ui_case),('B05 owner IDOR, idempotency, validation and CSRF',owner_and_validation_case),('B06 login-required share exchange and revocation',member_share_case),('B07 coach sharing, group IDOR and revocation',groups_case),('B08 response-loss retry preserves UUID and consent',member_response_loss_ui_case),('B09 direct REST raw data and privilege denials',direct_rest_case),('B10 forged JWT and persistent rate enforcement',jwt_and_rate_case),('B11 account switch cannot replay old completed draft',account_switch_case),('B12 actual Catalyst public home, search and local tool',catalyst_public_case),('B13 same UUID Catalyst explicit consent and actual draft',catalyst_case),('B14 Catalyst role mapping and suspension',catalyst_roles_case),('B15 Catalyst superadmin consent and audit preservation',catalyst_bootstrap_case),('B16 phone anti-enumeration and CSRF',member_phone_privacy_case),('B17 real local recovery mail and password change',recovery_mail_case),('B18 logout removes authenticated result access',member_logout_case)]
+        cases=[('B01 anonymous UI, session, diagnosis and sharing denied',anonymous_denied_case),('B02 actual signup and canonical profile',signup_case),('B03 actual Auth refresh, role and cookies',auth_case),('B04 member thirty-question save, refresh and relogin',member_ui_case),('B05 owner IDOR, idempotency, validation and CSRF',owner_and_validation_case),('B06 login-required share exchange and revocation',member_share_case),('B07 coach sharing, group IDOR and revocation',groups_case),('B08 response-loss retry preserves UUID and consent',member_response_loss_ui_case),('B09 direct REST raw data and privilege denials',direct_rest_case),('B10 forged JWT and persistent rate enforcement',jwt_and_rate_case),('B11 account switch cannot replay old completed draft',account_switch_case),('B12 actual Catalyst public home, search and local tool',catalyst_public_case),('B13 same UUID Catalyst explicit consent and actual draft',catalyst_case),('B14 Catalyst role mapping and suspension',catalyst_roles_case),('B15 Catalyst superadmin consent and audit preservation',catalyst_bootstrap_case),('B16 phone anti-enumeration and CSRF',member_phone_privacy_case),('B17 real local recovery mail and password change',recovery_mail_case),('B18 logout removes authenticated result access',member_logout_case),('B19 actual operating contact profile schema and privacy',contact_profile_case)]
         for name,case in cases:
             # Reset test-only rate fixture between independent cases. B10 itself
             # runs the complete configured bound without clearing within the case.

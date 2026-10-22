@@ -11,8 +11,8 @@ import { isValidPhone, normalizePhone } from '@/lib/phone';
 import { isSameOriginMutation } from '@/lib/result-security-policy';
 import { getAuthContext } from '@/lib/supabase/auth';
 import { createServiceRoleClient } from '@/lib/supabase/server';
-import { toUserProfile } from '@/lib/user-profile';
-import type { Database, UserRow } from '@/types/database';
+import { toUserProfile, USER_PROFILE_SELECT } from '@/lib/user-profile';
+import type { Database, UserWithContact } from '@/types/database';
 
 export async function GET() {
   const auth = await getAuthContext();
@@ -22,9 +22,9 @@ export async function GET() {
   const svc = createServiceRoleClient();
   const { data, error } = await svc
     .from('users')
-    .select('id, name, nickname, phone, email, role, created_at, updated_at')
+    .select(USER_PROFILE_SELECT)
     .eq('id', auth.userId)
-    .single<UserRow>();
+    .single<UserWithContact>();
   if (error || !data) {
     return NextResponse.json(
       { error: '회원 정보를 확인하지 못했습니다.' },
@@ -63,6 +63,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const update: Database['public']['Tables']['users']['Update'] = {};
+  let contactPhone: string | null | undefined;
   if (typeof body.full_name === 'string') {
     const v = body.full_name.trim();
     if (v.length < 1 || v.length > 50) {
@@ -86,7 +87,7 @@ export async function PATCH(request: NextRequest) {
   if (typeof body.phone === 'string') {
     const p = normalizePhone(body.phone);
     if (p.length === 0) {
-      update.phone = null!;
+      contactPhone = null;
     } else if (!isValidPhone(p)) {
       return NextResponse.json(
         { error: '전화번호 형식이 올바르지 않습니다.' },
@@ -96,10 +97,11 @@ export async function PATCH(request: NextRequest) {
       // unique 충돌 사전 체크
       const svc = createServiceRoleClient();
       const { data: existing } = await svc
-        .from('users')
-        .select('id')
+        .from('user_contacts')
+        .select('user_id')
         .eq('phone', p)
-        .neq('id', auth.userId)
+        .neq('user_id', auth.userId)
+        .limit(1)
         .maybeSingle();
       if (existing) {
         return NextResponse.json(
@@ -107,21 +109,27 @@ export async function PATCH(request: NextRequest) {
           { status: 409 }
         );
       }
-      update.phone = p;
+      contactPhone = p;
     }
   }
 
-  if (Object.keys(update).length === 0) {
+  if (Object.keys(update).length === 0 && contactPhone === undefined) {
     return NextResponse.json({ ok: true, unchanged: true });
   }
 
   const svc = createServiceRoleClient();
-  const { data, error } = await svc
-    .from('users')
-    .update(update as never)
-    .eq('id', auth.userId)
-    .select('id, name, nickname, phone, email, role, created_at, updated_at')
-    .single<UserRow>();
+  if (contactPhone !== undefined) {
+    const { error } = await svc.from('user_contacts').upsert({
+      user_id: auth.userId, phone: contactPhone, updated_at: new Date().toISOString(),
+    } as never, { onConflict: 'user_id' });
+    if (error) return NextResponse.json({ error: '전화번호를 저장하지 못했습니다.' }, { status: 500 });
+  }
+  if (Object.keys(update).length) {
+    const { error } = await svc.from('users').update(update as never).eq('id', auth.userId);
+    if (error) return NextResponse.json({ error: '회원 정보를 저장하지 못했습니다.' }, { status: 500 });
+  }
+  const { data, error } = await svc.from('users').select(USER_PROFILE_SELECT)
+    .eq('id', auth.userId).single<UserWithContact>();
   if (error || !data) {
     return NextResponse.json({ error: '회원 정보를 저장하지 못했습니다.' }, { status: 500 });
   }
