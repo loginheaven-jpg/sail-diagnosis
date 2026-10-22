@@ -21,7 +21,7 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parent
-STATE = Path('/tmp/phase1-closeout-private')
+STATE = Path(os.environ.get('PHASE1_PRIVATE_DIR', '/tmp/phase1-closeout-private')).resolve()
 NETWORK = 'phase1-closeout-internal'
 DB = 'phase1-closeout-db'
 AUTH = 'phase1-closeout-auth'
@@ -34,22 +34,27 @@ IMAGES = {
     'postgres': 'postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24',
     'auth': 'supabase/gotrue:v2.185.0@sha256:de22ff0811f3e4f7e6d3ba226f75ed8d82310df577bbd61e16fbfd7a50a8c9ce',
     'rest': 'postgrest/postgrest:v13.0.7@sha256:0a46780309a604cdc8b56c776c6e5e15788ce58174d709e40459ab5a2d44d228',
+    'gateway': 'python@sha256:c8271b1f627d0068857dce5b53e14a9558603b527e46f1f901722f935b786a39',
     'mail': 'axllent/mailpit@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387',
 }
 _docker_checked = False
 _database_checked = False
 
 
+def local_docker_endpoint(endpoint):
+    return endpoint.startswith('unix://') or (os.name == 'nt' and endpoint in ('npipe:////./pipe/dockerDesktopLinuxEngine', 'npipe:////./pipe/docker_engine'))
+
+
 def command(args, stdin=None, check=True):
     global _docker_checked
     if args[0] == 'docker' and not _docker_checked:
-        if os.environ.get('DOCKER_HOST') and not os.environ['DOCKER_HOST'].startswith('unix://'):
+        if os.environ.get('DOCKER_HOST') and not local_docker_endpoint(os.environ['DOCKER_HOST']):
             raise RuntimeError('Local harness refuses remote DOCKER_HOST')
-        endpoint = subprocess.run(['docker', 'context', 'inspect', '--format', '{{.Endpoints.docker.Host}}'], text=True, capture_output=True, timeout=10)
-        if endpoint.returncode or not endpoint.stdout.strip().startswith('unix://'):
+        endpoint = subprocess.run(['docker', 'context', 'inspect', '--format', '{{.Endpoints.docker.Host}}'], text=True, encoding='utf-8', capture_output=True, timeout=10)
+        if endpoint.returncode or not local_docker_endpoint(endpoint.stdout.strip()):
             raise RuntimeError('Local harness refuses remote/non-Unix Docker contexts')
         _docker_checked = True
-    p = subprocess.run(args, input=stdin, text=True, capture_output=True, timeout=120)
+    p = subprocess.run(args, input=stdin, text=True, encoding='utf-8', capture_output=True, timeout=120)
     if check and p.returncode:
         # Docker command/environment diagnostics can contain credentials: redact.
         raise RuntimeError(f'Local command failed: {args[0]} ({p.returncode}); private diagnostic withheld')
@@ -129,6 +134,9 @@ def make_state():
         'NEXT_PUBLIC_SUPABASE_ANON_KEY': c['anon_key'],
         'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY': c['anon_key'],
         'SUPABASE_SERVICE_ROLE_KEY': c['service_role_key'],
+        'SUPABASE_SECRET_KEY': c['service_role_key'],
+        'SAIL_APP_ORIGIN': 'http://127.0.0.1:3040',
+        'SAIL_ALLOW_LOCAL_HTTP': 'true',
         'VITE_SUPABASE_URL': c['supabase_url'],
         'VITE_SUPABASE_ANON_KEY': c['anon_key'],
         'VITE_SUPABASE_PUBLISHABLE_KEY': c['anon_key'],
@@ -174,11 +182,11 @@ def start():
     network = json.loads(command(['docker', 'network', 'inspect', NETWORK]).stdout)[0]
     if not network['Internal'] or network.get('Labels', {}).get('phase1.closeout') != '1':
         raise RuntimeError('Refusing to reuse a non-owned/non-internal Docker network')
-    for name in (AUTH, REST, MAIL, DB):
+    for name in ('phase1-closeout-gateway', AUTH, REST, MAIL, DB):
         existing = command(['docker', 'inspect', name], check=False)
         if existing.returncode == 0 and json.loads(existing.stdout)[0]['Config'].get('Labels', {}).get('phase1.closeout') != '1':
             raise RuntimeError('Refusing to remove an unrelated Docker container')
-    command(['docker', 'rm', '-f', AUTH, REST, MAIL, DB], check=False)
+    command(['docker', 'rm', '-f', 'phase1-closeout-gateway', AUTH, REST, MAIL, DB], check=False)
     run_container(DB, IMAGES['postgres'], ['--tmpfs', '/var/lib/postgresql/data:rw,nosuid', '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', '-p', '127.0.0.1:54322:5432'])
     for _ in range(100):
         process = command(['docker', 'exec', DB, 'cat', '/proc/1/comm'], check=False)
@@ -211,20 +219,22 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon,authent
         targets[key] = command(['docker', 'inspect', name, '--format', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}']).stdout.strip()
         assert re.fullmatch(r'172\.\d+\.\d+\.\d+', targets[key])
     private(STATE / 'targets.json', json.dumps(targets))
-    gateway_pid = STATE / 'gateway.pid'
-    if gateway_pid.exists():
-        try:
-            old_pid = int(gateway_pid.read_text())
-            cmdline = Path(f'/proc/{old_pid}/cmdline').read_bytes()
-            if b'gateway.py' in cmdline and (b'phase1-closeout-runtime' in cmdline or str(SAIL / 'tests/local-runtime').encode() in cmdline):
-                os.kill(old_pid, 15)
-        except ProcessLookupError:
-            pass
-        except FileNotFoundError:
-            pass
-    log = (STATE / 'gateway.log').open('a')
-    p = subprocess.Popen([sys.executable, str(ROOT / 'gateway.py')], stdout=log, stderr=log, start_new_session=True)
-    private(gateway_pid, str(p.pid))
+    # Only this fixed-target gateway joins the published bridge; DB/Auth/REST
+    # remain on the owned internal network. No secrets or production data mount.
+    ingress = 'phase1-closeout-loopback'
+    command(['docker', 'network', 'create', '--label', 'phase1.closeout=1', ingress], check=False)
+    ingress_meta = json.loads(command(['docker', 'network', 'inspect', ingress]).stdout)[0]
+    if ingress_meta.get('Labels', {}).get('phase1.closeout') != '1':
+        raise RuntimeError('Refusing unrelated gateway network')
+    command(['docker', 'create', '--pull=never', '--name', 'phase1-closeout-gateway',
+        '--label', 'phase1.closeout=1', '--network', ingress,
+        '-p', '127.0.0.1:54321:54321', '-p', '127.0.0.1:54325:54325',
+        '--mount', f'type=bind,source={ROOT / "gateway.py"},target=/gateway.py,readonly',
+        '--mount', f'type=bind,source={STATE / "targets.json"},target=/private/targets.json,readonly',
+        '-e', 'PHASE1_PRIVATE_DIR=/private', '-e', 'PHASE1_GATEWAY_BIND=0.0.0.0',
+        IMAGES['gateway'], 'python', '/gateway.py'])
+    command(['docker', 'network', 'connect', NETWORK, 'phase1-closeout-gateway'])
+    command(['docker', 'start', 'phase1-closeout-gateway'])
     for _ in range(100):
         try:
             status, _ = local_request('/auth/v1/health')
@@ -307,17 +317,18 @@ def seed(c):
 
 
 def stop():
-    for name in (AUTH, REST, MAIL, DB):
+    for name in ('phase1-closeout-gateway', AUTH, REST, MAIL, DB):
         existing = command(['docker', 'inspect', name], check=False)
         if existing.returncode == 0 and json.loads(existing.stdout)[0]['Config'].get('Labels', {}).get('phase1.closeout') != '1':
             raise RuntimeError('Refusing to stop an unrelated Docker container')
-    command(['docker', 'rm', '-f', AUTH, REST, MAIL, DB], check=False)
-    network = command(['docker', 'network', 'inspect', NETWORK], check=False)
-    if network.returncode == 0:
-        metadata = json.loads(network.stdout)[0]
-        if metadata.get('Labels', {}).get('phase1.closeout') != '1':
-            raise RuntimeError('Refusing to remove an unrelated Docker network')
-        command(['docker', 'network', 'rm', NETWORK], check=False)
+    command(['docker', 'rm', '-f', 'phase1-closeout-gateway', AUTH, REST, MAIL, DB], check=False)
+    for network_name in (NETWORK, 'phase1-closeout-loopback'):
+        network = command(['docker', 'network', 'inspect', network_name], check=False)
+        if network.returncode == 0:
+            metadata = json.loads(network.stdout)[0]
+            if metadata.get('Labels', {}).get('phase1.closeout') != '1':
+                raise RuntimeError('Refusing to remove an unrelated Docker network')
+            command(['docker', 'network', 'rm', network_name], check=False)
     pid = STATE / 'gateway.pid'
     if pid.exists():
         try:

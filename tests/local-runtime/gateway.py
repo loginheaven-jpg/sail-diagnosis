@@ -2,13 +2,14 @@
 import http.client
 import ipaddress
 import json
+import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import threading
 from urllib.parse import urlsplit
 
 PORT = 54321
-CONFIG = json.loads(Path('/tmp/phase1-closeout-private/targets.json').read_text())
+CONFIG = json.loads((Path(os.environ.get('PHASE1_PRIVATE_DIR', '/tmp/phase1-closeout-private')) / 'targets.json').read_text())
 if set(CONFIG) != {'auth', 'rest', 'mail'} or any(
     ipaddress.ip_address(host) not in ipaddress.ip_network('172.16.0.0/12')
     for host in CONFIG.values()
@@ -76,5 +77,7 @@ class Handler(BaseHTTPRequestHandler):
     do_GET = do_HEAD = do_POST = do_PUT = do_PATCH = do_DELETE = proxy
 
 
-threading.Thread(target=ThreadingHTTPServer(('127.0.0.1', 54325), Handler).serve_forever, daemon=True).start()
-ThreadingHTTPServer(('127.0.0.1', PORT), Handler).serve_forever()
+BIND = os.environ.get('PHASE1_GATEWAY_BIND', '127.0.0.1')
+if BIND not in ('127.0.0.1', '0.0.0.0'): raise RuntimeError('Invalid local bind')
+threading.Thread(target=ThreadingHTTPServer((BIND, 54325), Handler).serve_forever, daemon=True).start()
+ThreadingHTTPServer((BIND, PORT), Handler).serve_forever()

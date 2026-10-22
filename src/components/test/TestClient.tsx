@@ -88,7 +88,10 @@ function TestPageContent() {
   // A completion has one idempotency key. Changing the loading/error UI must
   // not cancel the request or automatically retry a failed save.
   useEffect(() => {
-    if (!isCompleted || !requestId) return;
+    // Auth transitions clear the store in a layout effect. A passive effect
+    // from the preceding render can still contain the completed old draft.
+    const currentDraft = useTestStore.getState();
+    if (!isCompleted || !requestId || !currentDraft.isCompleted || currentDraft.requestId !== requestId) return;
     let current = true;
     if (!submission.current) {
       submission.current = (async () => {
@@ -96,6 +99,8 @@ function TestPageContent() {
           method: 'POST', credentials: 'same-origin', cache: 'no-store',
           headers: { 'Content-Type': 'application/json' }, body: '{}',
         });
+        const draftAfterSession = useTestStore.getState();
+        if (!draftAfterSession.isCompleted || draftAfterSession.requestId !== requestId) throw new Error('계정이 변경되었습니다. 새 진단을 시작해 주세요.');
         if (!session.ok) throw new Error('참여 세션을 준비하지 못했습니다. 다시 시도해 주세요.');
         const response = await fetch('/api/diagnosis', {
           method: 'POST', credentials: 'same-origin', cache: 'no-store',
